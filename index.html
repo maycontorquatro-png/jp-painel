@@ -1,0 +1,1687 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f172a">
+<title>JP Embalagens · Painel Operador</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" crossorigin="anonymous"></script>
+<style>
+:root{--bg-0:#0f172a;--bg-1:#1e293b;--bg-2:#243044;--bg-3:#2d3a52;--line:#334155;--line-soft:#1f2a3d;--text:#f1f5f9;--text-2:#cbd5e1;--text-3:#94a3b8;--text-4:#64748b;--amber:#f59e0b;--amber-2:#fbbf24;--orange:#fb923c;--red:#ef4444;--green:#10b981;--green-2:#22c55e;--blue:#3b82f6;--violet:#8b5cf6;--teal:#14b8a6;--stone:#a8a29e;--radius:14px;--radius-sm:10px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:linear-gradient(180deg,#0f172a 0%,#1e293b 100%);color:var(--text);font-family:'Outfit',-apple-system,system-ui,sans-serif;min-height:100vh;font-size:16px;overscroll-behavior:none}
+body{padding:14px;padding-bottom:40px}
+button{font-family:inherit;cursor:pointer;border:0;outline:0;background:none;color:inherit;font-size:inherit}
+input,select{font-family:inherit;color:var(--text);background:var(--bg-2);border:2px solid var(--line);border-radius:10px;padding:14px 16px;font-size:17px;width:100%;transition:border .2s}
+input:focus,select:focus{border-color:var(--amber);outline:none}
+input[type=time],input[type=date],input[type=number]{color-scheme:dark;font-family:'JetBrains Mono';font-weight:600}
+.app-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding:6px 0}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#f59e0b,#fb923c);display:grid;place-items:center;font-family:'Oswald';font-weight:700;font-size:14px;color:#0f172a;box-shadow:0 4px 14px rgba(245,158,11,.35)}
+.brand-text h1{font-family:'Oswald';font-weight:700;font-size:17px;letter-spacing:.4px;line-height:1}
+.brand-text p{color:var(--text-3);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.user-tag{background:var(--bg-2);border:1px solid var(--line);border-radius:20px;padding:6px 10px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;max-width:55%}
+.user-tag .av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0}
+.user-tag span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-tag .logout{color:var(--text-3);font-size:18px;line-height:1;background:none;padding:0 4px}
+.screen{display:none;animation:fade .2s}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.login-box{max-width:380px;margin:30px auto;text-align:center}
+.login-mark{width:72px;height:72px;margin:0 auto 14px;border-radius:18px;background:linear-gradient(135deg,#f59e0b,#fb923c);display:grid;place-items:center;font-family:'Oswald';font-weight:700;font-size:22px;color:#0f172a;box-shadow:0 8px 24px rgba(245,158,11,.45)}
+.login-title{font-family:'Oswald';font-size:22px;font-weight:700;letter-spacing:.5px;margin-bottom:4px}
+.login-sub{color:var(--text-3);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:24px}
+.login-card{background:var(--bg-1);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:12px}
+.login-card label{display:block;font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600;margin-bottom:8px}
+.op-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto}
+.op-item{padding:13px 14px;background:var(--bg-2);border:2px solid var(--line);border-radius:10px;font-size:15px;font-weight:600;text-align:left;display:flex;align-items:center;gap:12px;transition:all .15s;width:100%}
+.op-item:active{transform:scale(.97)}
+.op-item.selected{border-color:var(--amber);background:rgba(245,158,11,.08)}
+.op-item .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+.op-item.new{border-style:dashed;color:var(--text-3);justify-content:center;font-style:italic}
+.op-add{display:flex;gap:8px;margin-top:10px}
+.op-add input{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:12px;font-weight:700;font-size:14px;letter-spacing:.3px;transition:transform .12s;width:100%}
+.btn:active{transform:scale(.96)}
+.btn-primary{background:linear-gradient(135deg,#f59e0b,#fb923c);color:#0f172a;box-shadow:0 4px 14px rgba(245,158,11,.3)}
+.btn-ghost{background:var(--bg-2);color:var(--text-2);border:1px solid var(--line)}
+.btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.btn-warn{background:linear-gradient(135deg,#fb923c,#ea580c);color:#fff}
+.btn-danger{background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+.btn-blue{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+.btn-lg{padding:16px;font-size:16px}
+.section-title{font-family:'Oswald';font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-3);margin:18px 0 10px;display:flex;align-items:center;gap:8px}
+.section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.tabs-pedidos{display:flex;gap:4px;background:var(--bg-1);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:14px}
+.tabs-pedidos button{flex:1;padding:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-radius:8px;color:var(--text-3)}
+.tabs-pedidos button.active{background:var(--amber);color:#0f172a}
+.aviso-andamento{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-left:4px solid var(--blue);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#93c5fd;display:none}
+.aviso-andamento.show{display:flex;align-items:center;gap:8px}
+.aviso-andamento strong{color:#dbeafe}
+.pedidos-list{display:flex;flex-direction:column;gap:10px}
+.pedido-card{background:var(--bg-1);border:1px solid var(--line);border-radius:14px;padding:14px;position:relative;overflow:hidden;transition:all .15s;cursor:pointer}
+.pedido-card:active{transform:scale(.99);background:var(--bg-2)}
+.pedido-card.em_producao{border-color:rgba(59,130,246,.5);background:linear-gradient(135deg,var(--bg-1),rgba(59,130,246,.08))}
+.pedido-card.pausado{border-color:rgba(251,146,60,.5);background:linear-gradient(135deg,var(--bg-1),rgba(251,146,60,.08))}
+.pedido-card.atrasado{border-color:rgba(239,68,68,.45)}
+.pedido-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--text-4)}
+.pedido-card.programado::before{background:var(--stone)}
+.pedido-card.em_producao::before{background:var(--blue);box-shadow:0 0 8px var(--blue)}
+.pedido-card.pausado::before{background:var(--orange);box-shadow:0 0 8px var(--orange)}
+.pedido-card.atrasado::before{background:var(--red);box-shadow:0 0 8px var(--red)}
+.pedido-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+.pedido-cliente{font-family:'Oswald';font-size:17px;font-weight:700;letter-spacing:.4px}
+.pedido-codigo{font-family:'JetBrains Mono';font-size:13px;color:var(--amber);font-weight:600;margin-top:2px}
+.pedido-status{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;padding:4px 8px;border-radius:5px;white-space:nowrap}
+.pedido-status.programado{background:rgba(148,163,184,.18);color:var(--text-2)}
+.pedido-status.em_producao{background:rgba(59,130,246,.25);color:#93c5fd;animation:pulseSoft 2s infinite}
+.pedido-status.pausado{background:rgba(251,146,60,.25);color:#fdba74}
+.pedido-status.atrasado{background:rgba(239,68,68,.22);color:#fca5a5}
+@keyframes pulseSoft{0%,100%{opacity:1}50%{opacity:.7}}
+.pedido-data{display:flex;justify-content:space-between;font-family:'JetBrains Mono';font-size:12px;color:var(--text-3);padding-top:8px;border-top:1px dashed var(--line-soft)}
+.pedido-data .qty{color:var(--text)}
+.pedido-data .atraso{color:#fca5a5;font-weight:700}
+.pedido-data .ok{color:var(--text-3)}
+.prod-header{background:var(--bg-1);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.prod-header .back{color:var(--text-3);font-size:13px;margin-bottom:10px;display:flex;align-items:center;gap:6px;background:none;padding:0;width:auto;font-weight:500}
+.prod-header .cliente{font-family:'Oswald';font-size:22px;font-weight:700;letter-spacing:.4px}
+.prod-header .codigo{font-family:'JetBrains Mono';font-size:14px;color:var(--amber);margin-top:2px}
+.prod-header .meta{display:flex;gap:14px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line-soft);font-size:12px;color:var(--text-3);font-family:'JetBrains Mono';flex-wrap:wrap}
+.prod-header .meta strong{color:var(--text)}
+.step{background:var(--bg-1);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;transition:all .2s}
+.step.done{border-color:rgba(16,185,129,.4);background:linear-gradient(135deg,var(--bg-1),rgba(16,185,129,.05))}
+.step.active{border-color:var(--amber);box-shadow:0 0 0 1px rgba(245,158,11,.3)}
+.step.disabled{opacity:.4}
+.step-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.step-icon{width:36px;height:36px;border-radius:10px;background:var(--bg-3);display:grid;place-items:center;font-size:18px;flex-shrink:0;transition:all .2s}
+.step.done .step-icon{background:rgba(16,185,129,.2);color:#6ee7b7}
+.step.active .step-icon{background:linear-gradient(135deg,#f59e0b,#fb923c);color:#0f172a;box-shadow:0 4px 12px rgba(245,158,11,.3)}
+.step-title{font-family:'Oswald';font-size:14px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text-2);line-height:1.2}
+.step-sub{font-size:11px;color:var(--text-3);margin-top:2px;font-family:'JetBrains Mono'}
+.step.done .step-title{color:#6ee7b7}
+.step-time{font-family:'JetBrains Mono';font-size:18px;font-weight:700;color:var(--amber-2);text-align:right;margin-left:auto}
+.step.done .step-time{color:#6ee7b7}
+.step-body{margin-top:4px}
+.step-body.hidden{display:none}
+.timer{font-family:'JetBrains Mono';font-size:32px;font-weight:700;color:var(--amber-2);text-align:center;letter-spacing:1px;padding:8px 0;background:rgba(245,158,11,.08);border-radius:10px;margin-bottom:10px}
+.timer.prod{color:#6ee7b7;background:rgba(16,185,129,.08)}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.action-row.single{grid-template-columns:1fr}
+.action-row.three{grid-template-columns:1fr 1fr 1fr}
+.summary{background:var(--bg-1);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.summary-title{font-family:'Oswald';font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-3);margin-bottom:10px}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.summary-item{background:var(--bg-2);border-radius:10px;padding:10px;text-align:center}
+.summary-l{font-size:9px;color:var(--text-4);text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.summary-v{font-family:'JetBrains Mono';font-size:18px;font-weight:700;color:var(--amber-2);margin-top:2px}
+.summary-v.green{color:#6ee7b7}
+.success-screen{text-align:center;padding:40px 20px}
+.success-icon{width:80px;height:80px;margin:0 auto 18px;background:linear-gradient(135deg,#10b981,#22c55e);border-radius:50%;display:grid;place-items:center;font-size:40px;color:#fff;box-shadow:0 8px 28px rgba(16,185,129,.4)}
+.success-title{font-family:'Oswald';font-size:24px;font-weight:700;margin-bottom:6px}
+.success-sub{color:var(--text-3);font-size:13px;margin-bottom:24px;white-space:pre-line}
+.dialog-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.dialog-bg.show{display:flex}
+.dialog{background:var(--bg-1);border:1px solid var(--line);border-radius:14px;width:100%;max-width:420px;padding:20px;animation:fade .2s}
+.dialog-title{font-family:'Oswald';font-size:18px;font-weight:600;letter-spacing:.4px;margin-bottom:8px}
+.dialog-body{font-size:14px;color:var(--text-2);margin-bottom:16px;line-height:1.5}
+.dialog-foot{display:flex;gap:8px}
+.dialog-foot .btn{flex:1}
+.sync-box{background:var(--bg-1);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.sync-info{font-size:12px;color:var(--text-3);margin-bottom:10px;line-height:1.5}
+.sync-info strong{color:var(--amber-2)}
+.sync-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.empty-msg{text-align:center;padding:40px 20px;color:var(--text-3)}
+.empty-msg .icon{font-size:48px;margin-bottom:12px;opacity:.4}
+.empty-msg .txt{font-size:13px;line-height:1.5}
+.toast{position:fixed;bottom:20px;left:14px;right:14px;background:var(--bg-1);border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;padding:13px 16px;color:var(--text);box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:200;font-size:13px;font-weight:600;transform:translateY(150%);transition:transform .25s}
+.toast.show{transform:translateY(0)}
+.toast.err{border-left-color:var(--red)}
+.badge-count{background:rgba(245,158,11,.15);color:var(--amber-2);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;margin-left:auto}
+.pal-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-2);border:1px solid var(--line);border-radius:8px;font-family:'JetBrains Mono';font-size:13px}
+.pal-item.done{border-color:rgba(16,185,129,.4);background:linear-gradient(90deg,var(--bg-2),rgba(16,185,129,.06))}
+.pal-item.ultimo{border-color:rgba(245,158,11,.5);background:linear-gradient(90deg,var(--bg-2),rgba(245,158,11,.06))}
+.pal-num{font-weight:700;color:var(--text-3);min-width:70px}
+.pal-cx{font-weight:700;color:var(--amber-2);flex:1}
+.pal-status{font-size:18px}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="brand">
+    <div class="brand-mark">JP</div>
+    <div class="brand-text"><h1>PAINEL OPERADOR</h1><p>JP EMBALAGENS</p></div>
+  </div>
+  <div class="user-tag" id="user-tag" style="display:none">
+    <div class="av" id="user-av">?</div>
+    <span id="user-nome">—</span>
+    <button class="logout" id="btn-logout" title="Sair">⏻</button>
+  </div>
+</div>
+
+<!-- TELA: LOGIN -->
+<div class="screen active" id="screen-login">
+  <div class="login-box">
+    <div class="login-mark">JP</div>
+    <div class="login-title">PAINEL OPERADOR</div>
+    <div class="login-sub">Quem está produzindo?</div>
+    <div class="login-card">
+      <label>Selecione seu nome</label>
+      <div class="op-list" id="op-list"></div>
+      <div class="op-add">
+        <input type="text" id="op-novo" placeholder="Adicionar novo operador" maxlength="20">
+        <button class="btn btn-primary" style="width:auto;padding:10px 16px" id="btn-add-op">+</button>
+      </div>
+    </div>
+    <div class="login-card">
+      <label>Máquina</label>
+      <select id="login-maquina">
+        <option value="">Selecionar...</option>
+        <option value="Máq. B Slotter">Máq. B Slotter</option>
+        <option value="Máq. A Corte e Vinco">Máq. A Corte e Vinco</option>
+        <option value="Coladeira">Coladeira</option>
+        <option value="Grampeadeira 01">Grampeadeira 01</option>
+        <option value="outra">Outra (digitar)</option>
+      </select>
+      <input type="text" id="login-maquina-custom" placeholder="Nome da máquina" style="display:none;margin-top:8px">
+    </div>
+    <button class="btn btn-primary btn-lg" id="btn-entrar" disabled style="opacity:.5">Entrar</button>
+  </div>
+</div>
+
+<!-- TELA: LISTA DE PEDIDOS -->
+<div class="screen" id="screen-pedidos">
+  <div class="sync-box">
+    <div class="sync-info" id="sync-status">
+      <span id="fb-status" style="color:var(--amber-2);font-weight:600">⏳ Conectando ao Firebase...</span><br>
+      <span id="sync-data" style="font-size:11px">Pedidos serão carregados automaticamente após o login</span>
+    </div>
+    <div class="sync-actions">
+      <label class="btn btn-ghost" style="cursor:pointer;font-size:12px">
+        📂 Carregar arquivo (manual)
+        <input type="file" id="file-pedidos" accept=".json" style="display:none">
+      </label>
+      <button class="btn btn-success" id="btn-enviar">📤 Enviar registros (<span id="qtd-pendente">0</span>)</button>
+    </div>
+  </div>
+
+  <div id="aviso-andamento" class="aviso-andamento">
+    <span style="font-size:18px">🔧</span>
+    <div>Você tem <strong><span id="qtd-andamento">0</span></strong> pedido(s) em andamento. Toque pra continuar.</div>
+  </div>
+
+  <div class="tabs-pedidos">
+    <button data-filtro="todos" class="active">Todos (<span id="tab-todos">0</span>)</button>
+    <button data-filtro="em_producao">Em produção (<span id="tab-prod">0</span>)</button>
+    <button data-filtro="programado">Programados (<span id="tab-prog">0</span>)</button>
+    <button data-filtro="concluido">✅ Concluídos (<span id="tab-conc">0</span>)</button>
+  </div>
+
+  <div id="lista-pedidos"></div>
+</div>
+
+<!-- TELA: PRODUÇÃO -->
+<div class="screen" id="screen-producao">
+  <div class="prod-header">
+    <button class="back" id="btn-voltar">‹ Voltar para a lista</button>
+    <div class="cliente" id="prod-cliente">—</div>
+    <div class="codigo" id="prod-codigo">—</div>
+    <!-- Fluxo de etapas -->
+    <div id="prod-fluxo" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0;padding:10px 0;border-top:1px dashed var(--line-soft);border-bottom:1px dashed var(--line-soft)"></div>
+    <div class="meta">
+      <div>Qtd: <strong id="prod-qtd">—</strong></div>
+      <div>Entrega: <strong id="prod-entrega">—</strong></div>
+      <div>Pedido: <strong id="prod-num">—</strong></div>
+      <div>Máquina: <strong id="prod-maq-atual" style="color:var(--amber-2)">—</strong></div>
+    </div>
+  </div>
+
+  <div class="step" id="step-chapa">
+    <div class="step-head">
+      <div class="step-icon">📋</div>
+      <div><div class="step-title">Chapa chegou na máquina</div><div class="step-sub" id="step-chapa-sub">Registre quando o material chegou</div></div>
+      <div class="step-time" id="time-chapa">—</div>
+    </div>
+    <div class="step-body" id="step-chapa-body">
+      <button class="btn btn-warn btn-lg" id="btn-chapa">🚚 Marcar chegada agora</button>
+    </div>
+  </div>
+
+  <div class="step disabled" id="step-ajuste">
+    <div class="step-head">
+      <div class="step-icon">🔧</div>
+      <div><div class="step-title">Iniciar ajuste/setup</div><div class="step-sub">Troca de faca, clichê, acerto de cor</div></div>
+      <div class="step-time" id="time-ajuste">—</div>
+    </div>
+    <div class="step-body hidden" id="step-ajuste-body">
+      <div class="timer" id="timer-ajuste">00:00</div>
+      <select id="prod-motivo" style="margin-bottom:10px">
+        <option value="">Motivo do ajuste (opcional)</option>
+        <option value="troca_chapa">Troca de chapa/papel</option>
+        <option value="troca_faca">Troca de faca</option>
+        <option value="troca_cliche">Troca de clichê</option>
+        <option value="ajuste_cor">Ajuste de cor/tinta</option>
+        <option value="manutencao">Manutenção</option>
+        <option value="acerto_qualidade">Acerto de qualidade</option>
+        <option value="outro">Outro</option>
+      </select>
+      <div class="action-row">
+        <button class="btn btn-ghost" id="btn-skip-ajuste">Pular ajuste</button>
+        <button class="btn btn-warn btn-lg" id="btn-ajuste">🔧 Iniciar ajuste</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step disabled" id="step-prod">
+    <div class="step-head">
+      <div class="step-icon">▶</div>
+      <div><div class="step-title">Iniciar produção</div><div class="step-sub">Máquina rodando caixa</div></div>
+      <div class="step-time" id="time-prod">—</div>
+    </div>
+    <div class="step-body hidden" id="step-prod-body">
+      <div class="timer prod" id="timer-prod">00:00</div>
+      <button class="btn btn-success btn-lg" id="btn-prod">▶ Iniciar produção agora</button>
+    </div>
+  </div>
+
+  <div class="step disabled" id="step-fim">
+    <div class="step-head">
+      <div class="step-icon">✅</div>
+      <div><div class="step-title">Finalizar produção</div><div class="step-sub">Informe a quantidade produzida</div></div>
+      <div class="step-time" id="time-fim">—</div>
+    </div>
+    <div class="step-body hidden" id="step-fim-body">
+      <input type="number" id="prod-qtd-real" placeholder="Caixas produzidas" min="0" style="font-size:20px;text-align:center;margin-bottom:10px">
+      <div class="action-row">
+        <button class="btn btn-ghost" id="btn-pausar">⏸ Pausar pedido</button>
+        <button class="btn btn-success btn-lg" id="btn-fim">✅ Finalizar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary" id="prod-summary" style="display:none">
+    <div class="summary-title">Resumo</div>
+    <div class="summary-grid">
+      <div class="summary-item"><div class="summary-l">Espera</div><div class="summary-v" id="sum-espera">—</div></div>
+      <div class="summary-item"><div class="summary-l">Ajuste</div><div class="summary-v" id="sum-ajuste">—</div></div>
+      <div class="summary-item"><div class="summary-l">Produção</div><div class="summary-v green" id="sum-prod">—</div></div>
+      <div class="summary-item"><div class="summary-l">Média</div><div class="summary-v" id="sum-media">—</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TELA: SUCESSO -->
+<div class="screen" id="screen-sucesso">
+  <div class="success-screen">
+    <div class="success-icon">✓</div>
+    <div class="success-title">Registro Salvo!</div>
+    <div class="success-sub" id="sucesso-detalhe">Pendente para envio</div>
+    <button class="btn btn-blue btn-lg" id="btn-imprimir-etiquetas" style="display:none;margin-bottom:10px">🖨️ Imprimir etiquetas dos paletes</button>
+    <button class="btn btn-primary btn-lg" id="btn-novo-pedido">Voltar para a lista</button>
+  </div>
+</div>
+
+<!-- Diálogo -->
+<!-- MODAL: PALETIZAÇÃO — definir cx/palete ao iniciar -->
+<div class="dialog-bg" id="modal-paletizacao">
+  <div class="dialog" style="max-width:440px">
+    <div class="dialog-title">📦 Configurar Paletização</div>
+    <div class="dialog-body">
+      <div style="font-size:14px;color:var(--text-2);margin-bottom:14px">
+        Quantas caixas cabem em cada palete?
+      </div>
+      <input type="number" id="pal-cx-palete" placeholder="Ex: 700" min="1"
+        style="font-size:24px;text-align:center;padding:14px;font-family:'JetBrains Mono';font-weight:700">
+      <div id="pal-preview" style="margin-top:10px;text-align:center;font-family:'JetBrains Mono';font-size:13px;color:var(--text-3);min-height:40px"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-ghost" id="pal-pular">Pular paletização</button>
+      <button class="btn btn-primary" id="pal-confirmar">▶ Iniciar produção</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAINEL DE PALETIZAÇÃO (aparece durante produção na coladeira) -->
+<div id="painel-paletes" style="display:none;margin-bottom:10px">
+  <div style="background:var(--bg-1);border:1px solid var(--line);border-radius:14px;overflow:hidden">
+    <div style="background:var(--bg-3);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="font-family:'Oswald';font-size:14px;font-weight:600;letter-spacing:.5px;text-transform:uppercase">
+        📦 Paletização
+      </div>
+      <div style="display:flex;gap:10px;font-family:'JetBrains Mono';font-size:12px;color:var(--text-3)">
+        <span><strong id="pal-count-ok" style="color:var(--green-2)">0</strong> paletes</span>
+        <span><strong id="pal-count-cx" style="color:var(--amber-2)">0</strong> caixas</span>
+        <span id="pal-count-falta" style="color:#fca5a5"></span>
+      </div>
+    </div>
+    <div style="padding:12px 14px">
+      <div id="pal-lista" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;margin-bottom:10px"></div>
+      <button class="btn btn-primary btn-lg" id="pal-btn-confirmar">✓ Confirmar palete</button>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-bg" id="dialog">
+  <div class="dialog">
+    <div class="dialog-title" id="dialog-title">Confirmar</div>
+    <div class="dialog-body" id="dialog-body">—</div>
+    <div class="dialog-foot">
+      <button class="btn btn-ghost" id="dialog-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="dialog-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============== CHAVES ==============
+const PK_OPERADORES = 'jp_op_operadores';
+const PK_SESSAO = 'jp_op_sessao';
+const PK_PEDIDOS = 'jp_op_pedidos';
+const PK_PENDENTES = 'jp_op_pendentes';
+const PK_PROGRESSOS = 'jp_op_progressos';
+const PK_CONCLUIDOS = 'jp_op_concluidos'; // pedidoIds concluídos neste turno
+
+let STATE = {
+  operadores: [],
+  sessao: null,
+  pedidos: [],
+  pendentes: [],
+  progressos: {},
+  concluidos: {}, // {pedidoId: {cliente, codigo, qtd, hora, resumo}}
+  pedidoAtivo: null,
+  filtroAtivo: 'todos',
+  timerInt: null,
+  timerTipo: null,
+  timerStart: null
+};
+
+// ============== UTILS ==============
+function load(k, def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def}catch(e){return def}}
+function save(k, v){try{localStorage.setItem(k, JSON.stringify(v))}catch(e){console.error(e)}}
+const fmt = n => (n==null||isNaN(n))?'—':Number(n).toLocaleString('pt-BR');
+const fmtH = h => {if(h==null||isNaN(h))return '—';const i=Math.floor(h),m=Math.round((h-i)*60);return `${i}h${String(m).padStart(2,'0')}`};
+const uuid = () => 'r_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function today(){const d=new Date();d.setHours(0,0,0,0);return d}
+function ymd(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function nowTime(){const d=new Date();return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`}
+function nowIso(){return new Date().toISOString()}
+function diffMin(t1iso,t2iso){if(!t1iso||!t2iso)return 0;return (new Date(t2iso)-new Date(t1iso))/60000}
+function fmtCron(min){
+  if(!min||isNaN(min))return '00:00';
+  const totSeg = Math.max(0, Math.floor(min*60));
+  const h = Math.floor(totSeg/3600);
+  const m = Math.floor((totSeg%3600)/60);
+  const s = totSeg%60;
+  if(h>0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function diffDias(s){if(!s)return null;const d=new Date(s+'T00:00:00');return Math.round((d-today())/86400000)}
+function iniciais(nome){return nome.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase()}
+function corOperador(nome){const cores=['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#ef4444','#06b6d4'];let h=0;for(const c of nome)h=(h*31+c.charCodeAt(0))|0;return cores[Math.abs(h)%cores.length]}
+
+let toastT;
+function toast(msg, type='ok'){
+  clearTimeout(toastT);
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.toggle('err', type==='err');
+  t.classList.add('show');
+  toastT=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function confirmDialog(title, body, onOk){
+  document.getElementById('dialog-title').textContent = title;
+  document.getElementById('dialog-body').textContent = body;
+  document.getElementById('dialog').classList.add('show');
+  document.getElementById('dialog-ok').onclick = ()=>{document.getElementById('dialog').classList.remove('show');onOk()};
+  document.getElementById('dialog-cancel').onclick = ()=>document.getElementById('dialog').classList.remove('show');
+}
+
+function trocarTela(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ============== MIGRAÇÃO ==============
+function migrarProgressoAntigo(){
+  // chave antiga: jp_op_progresso (singular) ou mtx_op_progresso
+  const v = load('jp_op_progresso', null) || load('mtx_op_progresso', null);
+  if(v && v.pedidoId){
+    if(!STATE.progressos[v.pedidoId]){
+      STATE.progressos[v.pedidoId] = v;
+      save(PK_PROGRESSOS, STATE.progressos);
+    }
+    localStorage.removeItem('jp_op_progresso');
+    localStorage.removeItem('mtx_op_progresso');
+  }
+}
+
+// ============== LOGIN ==============
+function renderOperadores(){
+  const cont = document.getElementById('op-list');
+  if(STATE.operadores.length === 0){
+    cont.innerHTML = '<div class="op-item new">Nenhum operador. Adicione abaixo ↓</div>';
+    return;
+  }
+  cont.innerHTML = STATE.operadores.map(op =>
+    `<button class="op-item" data-op="${escapeHtml(op)}"><div class="av" style="background:${corOperador(op)}">${iniciais(op)}</div>${escapeHtml(op)}<span style="margin-left:auto;color:var(--text-4);font-size:18px">›</span></button>`
+  ).join('');
+  cont.querySelectorAll('[data-op]').forEach(b=>{
+    b.onclick = ()=>{
+      cont.querySelectorAll('.op-item').forEach(x=>x.classList.remove('selected'));
+      b.classList.add('selected');
+      STATE.sessaoTmp = {...(STATE.sessaoTmp||{}), operador: b.dataset.op};
+      checkLoginCompleto();
+    };
+  });
+}
+
+function checkLoginCompleto(){
+  const btn = document.getElementById('btn-entrar');
+  const t = STATE.sessaoTmp || {};
+  let maquina = document.getElementById('login-maquina').value;
+  if(maquina === 'outra') maquina = document.getElementById('login-maquina-custom').value.trim();
+  const ok = t.operador && maquina;
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '.5';
+}
+
+document.getElementById('btn-add-op').onclick = ()=>{
+  const v = document.getElementById('op-novo').value.trim();
+  if(!v){toast('Digite um nome','err');return}
+  if(STATE.operadores.includes(v)){toast('Operador já cadastrado','err');return}
+  STATE.operadores.push(v);
+  save(PK_OPERADORES, STATE.operadores);
+  document.getElementById('op-novo').value = '';
+  renderOperadores();
+  toast('Operador adicionado');
+};
+document.getElementById('op-novo').onkeypress = (e)=>{if(e.key==='Enter')document.getElementById('btn-add-op').click()};
+document.getElementById('login-maquina').onchange = (e)=>{
+  document.getElementById('login-maquina-custom').style.display = e.target.value === 'outra' ? 'block' : 'none';
+  checkLoginCompleto();
+};
+document.getElementById('login-maquina-custom').oninput = checkLoginCompleto;
+
+document.getElementById('btn-entrar').onclick = ()=>{
+  let maquina = document.getElementById('login-maquina').value;
+  if(maquina === 'outra') maquina = document.getElementById('login-maquina-custom').value.trim();
+  STATE.sessao = {operador: STATE.sessaoTmp.operador, maquina, desde: nowIso()};
+  save(PK_SESSAO, STATE.sessao);
+  entrarApp();
+};
+
+function entrarApp(){
+  const av = document.getElementById('user-av');
+  const nome = document.getElementById('user-nome');
+  av.textContent = iniciais(STATE.sessao.operador);
+  av.style.background = corOperador(STATE.sessao.operador);
+  nome.textContent = `${STATE.sessao.operador} · ${STATE.sessao.maquina}`;
+  document.getElementById('user-tag').style.display = 'flex';
+  renderListaPedidos();
+  trocarTela('pedidos');
+}
+
+document.getElementById('btn-logout').onclick = ()=>{
+  const qtdAndamento = Object.keys(STATE.progressos).length;
+  if(qtdAndamento > 0){
+    confirmDialog('Sair', `Você tem ${qtdAndamento} pedido(s) em andamento. O progresso fica salvo. Sair?`, doLogout);
+  } else doLogout();
+};
+function doLogout(){
+  STATE.sessao = null;
+  localStorage.removeItem(PK_SESSAO);
+  document.getElementById('user-tag').style.display = 'none';
+  trocarTela('login');
+}
+
+// ============== CARREGAR PEDIDOS ==============
+// Determina a etapa atual do pedido para ESTA máquina
+function etapaParaMaquina(p, maquina){
+  const roteiro = p.roteiro || 'impressora_coladeira';
+  const impressora = p.impressora || 'Máq. B Slotter';
+  const maqLow = (maquina||'').toLowerCase();
+
+  // Máquinas de corte (primeira etapa)
+  const ehCorte = maqLow.includes('slotter') || maqLow.includes('corte');
+  if(ehCorte){
+    if(impressora !== maquina) return null; // pedido é de outra máquina de corte
+    return 'impressora';
+  }
+  // Coladeira
+  if(maqLow.includes('coladeira')){
+    if(!roteiro.includes('coladeira')) return null;
+    return 'coladeira';
+  }
+  // Grampeadeira
+  if(maqLow.includes('grampeadeira')){
+    if(!roteiro.includes('grampeadeira')) return null;
+    return 'grampeadeira';
+  }
+  return null;
+}
+
+// Verifica se etapa anterior está concluída
+function etapaAnteriorConcluida(p){
+  const maqLow = (STATE.sessao?.maquina||'').toLowerCase();
+  const ehCorte = maqLow.includes('slotter') || maqLow.includes('corte');
+  if(ehCorte) return true; // primeira etapa, sempre disponível
+  // Coladeira e Grampeadeira só após corte concluído
+  return !!(p.etapas && p.etapas.impressora && p.etapas.impressora.status === 'concluido');
+}
+
+function processarPedidos(pedidos){
+  const maquina = STATE.sessao?.maquina || '';
+  return pedidos
+    .filter(p => p.statusOp === 'programado' || p.statusOp === 'em_producao')
+    .map(p => ({
+      id: p.id,
+      cliente: p.cliente,
+      codigo: p.codigo,
+      qtd: p.qtd,
+      cxh: p.cxh,
+      dataEntrega: p.dataEntrega,
+      statusOp: p.statusOp,
+      roteiro: p.roteiro || 'impressora_coladeira',
+      impressora: p.impressora || 'Máq. B Slotter',
+      etapas: p.etapas || {},
+      numPed: p._numPed || (p.obs ? (p.obs.match(/Ped\s+(\d+)/)||[])[1] : '') || '',
+      jaProduzido: (p.registros||[]).reduce((s,r)=>s+(+r.qtd||0),0)
+    }))
+    .filter(p => {
+      const etapa = etapaParaMaquina(p, maquina);
+      return etapa !== null; // só pedidos que passam por esta máquina
+    });
+}
+
+document.getElementById('file-pedidos').onchange = (e)=>{
+  const f = e.target.files[0];
+  if(!f)return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try {
+      const data = JSON.parse(ev.target.result);
+      const pedidos = Array.isArray(data) ? data : (data.pedidos || []);
+      STATE.pedidos = processarPedidos(pedidos);
+      save(PK_PEDIDOS, STATE.pedidos);
+      save('jp_op_dataload', new Date().toISOString());
+      const idsValidos = new Set(STATE.pedidos.map(p=>p.id));
+      Object.keys(STATE.progressos).forEach(pid=>{
+        if(!idsValidos.has(pid)) delete STATE.progressos[pid];
+      });
+      save(PK_PROGRESSOS, STATE.progressos);
+      const concluidosFiltrados = {};
+      Object.entries(STATE.concluidos).forEach(([pid, c])=>{
+        if(idsValidos.has(pid)) concluidosFiltrados[pid] = c;
+      });
+      STATE.concluidos = concluidosFiltrados;
+      save(PK_CONCLUIDOS, STATE.concluidos);
+      renderListaPedidos();
+      toast(`${STATE.pedidos.length} pedidos carregados`);
+    } catch(err){
+      console.error(err);
+      toast('Erro: arquivo inválido','err');
+    }
+  };
+  reader.readAsText(f, 'UTF-8');
+  e.target.value = '';
+};
+
+function statusVisualPedido(p){
+  const pg = STATE.progressos[p.id];
+  if(pg){
+    if(pg.prodInicioIso && !pg.fimIso) return 'em_producao';
+    if(pg.chapaIso || pg.ajusteInicioIso) return 'em_producao';
+  }
+  const dias = diffDias(p.dataEntrega);
+  if(dias != null && dias < 0) return 'atrasado';
+  return p.statusOp === 'em_producao' ? 'pausado' : p.statusOp;
+}
+
+function renderListaPedidos(){
+  const cont = document.getElementById('lista-pedidos');
+  const dataLoad = load('jp_op_dataload', null);
+  if(dataLoad){
+    const d = new Date(dataLoad);
+    document.getElementById('sync-data').textContent = `Carregados ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+  }
+  document.getElementById('qtd-pendente').textContent = STATE.pendentes.length;
+
+  // Pedidos ativos = os que NÃO foram concluídos ainda
+  const pedidosAtivos = STATE.pedidos.filter(p => !STATE.concluidos[p.id]);
+  const pedidosConcluidos = Object.values(STATE.concluidos);
+
+  // Contadores
+  let qtdProd = 0, qtdProg = 0;
+  pedidosAtivos.forEach(p=>{
+    if(STATE.progressos[p.id]) qtdProd++;
+    else qtdProg++;
+  });
+  const qtdConc = pedidosConcluidos.length;
+  document.getElementById('tab-todos').textContent = pedidosAtivos.length;
+  document.getElementById('tab-prod').textContent = qtdProd;
+  document.getElementById('tab-prog').textContent = qtdProg;
+  document.getElementById('tab-conc').textContent = qtdConc;
+
+  // Aviso de pedidos em andamento
+  const av = document.getElementById('aviso-andamento');
+  if(qtdProd > 0){
+    av.classList.add('show');
+    document.getElementById('qtd-andamento').textContent = qtdProd;
+  } else {
+    av.classList.remove('show');
+  }
+
+  // ABA CONCLUÍDOS — mostra lista própria
+  if(STATE.filtroAtivo === 'concluido'){
+    if(qtdConc === 0){
+      cont.innerHTML = '<div class="empty-msg"><div class="icon">✅</div><div class="txt">Nenhum pedido concluído neste turno ainda.</div></div>';
+      return;
+    }
+    cont.innerHTML = `<div class="pedidos-list">${pedidosConcluidos.map(c=>`
+      <div class="pedido-card" style="border-color:rgba(16,185,129,.4);background:linear-gradient(135deg,var(--bg-1),rgba(16,185,129,.06))">
+        <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:var(--green);border-radius:4px 0 0 4px"></div>
+        <div class="pedido-top">
+          <div>
+            <div class="pedido-cliente">${escapeHtml(c.cliente)}</div>
+            <div class="pedido-codigo">${escapeHtml(c.codigo||'—')}</div>
+          </div>
+          <div class="pedido-status" style="background:rgba(16,185,129,.2);color:#6ee7b7">✅ CONCLUÍDO</div>
+        </div>
+        <div class="pedido-data">
+          <div style="font-family:'JetBrains Mono'">
+            ${fmt(c.qtdRealizada)} cx · ${c.hora}
+          </div>
+          <div style="font-family:'JetBrains Mono';color:#6ee7b7">
+            ${c.tProd ? 'prod: '+fmtH(c.tProd) : ''} ${c.media ? '· '+fmt(c.media)+'/h' : ''}
+          </div>
+        </div>
+      </div>`).join('')}</div>`;
+    return;
+  }
+
+  if(STATE.pedidos.length === 0){
+    cont.innerHTML = '<div class="empty-msg"><div class="icon">📦</div><div class="txt">Nenhum pedido carregado.<br>Use "Carregar pedidos" pra trazer do sistema.</div></div>';
+    return;
+  }
+
+  // Filtrar conforme aba (excluindo concluídos de todas as abas ativas)
+  let lista = pedidosAtivos.filter(p=>{
+    if(STATE.filtroAtivo === 'todos') return true;
+    if(STATE.filtroAtivo === 'em_producao') return !!STATE.progressos[p.id];
+    if(STATE.filtroAtivo === 'programado') return !STATE.progressos[p.id];
+    return true;
+  });
+
+  // Ordenar: em andamento → atrasados → por data
+  lista = lista.sort((a,b)=>{
+    const aProd = !!STATE.progressos[a.id];
+    const bProd = !!STATE.progressos[b.id];
+    if(aProd !== bProd) return aProd ? -1 : 1;
+    const aDias = diffDias(a.dataEntrega), bDias = diffDias(b.dataEntrega);
+    if(aDias == null && bDias == null) return 0;
+    if(aDias == null) return 1;
+    if(bDias == null) return -1;
+    return aDias - bDias;
+  });
+
+  if(lista.length === 0){
+    cont.innerHTML = '<div class="empty-msg"><div class="icon">🔍</div><div class="txt">Nenhum pedido neste filtro</div></div>';
+    return;
+  }
+
+  cont.innerHTML = `<div class="pedidos-list">${lista.map(p=>{
+    const stVis = statusVisualPedido(p);
+    const dias = diffDias(p.dataEntrega);
+    const restante = Math.max(0, p.qtd - p.jaProduzido);
+    const maquina = STATE.sessao?.maquina || '';
+    const etapa = etapaParaMaquina(p, maquina);
+    const anteriorOk = etapaAnteriorConcluida(p);
+    let diasTxt;
+    if(dias==null) diasTxt = '<span class="ok">—</span>';
+    else if(dias<0) diasTxt = `<span class="atraso">+${Math.abs(dias)}d</span>`;
+    else if(dias===0) diasTxt = '<span class="atraso" style="color:#fbbf24">HOJE</span>';
+    else if(dias===1) diasTxt = '<span class="ok">amanhã</span>';
+    else diasTxt = `<span class="ok">${dias} dias</span>`;
+
+    let statusTxt;
+    if(!anteriorOk) statusTxt = '⏳ AGUARDANDO IMPRESSORA';
+    else if(stVis === 'em_producao') statusTxt = '🔧 EM ANDAMENTO';
+    else if(stVis === 'pausado') statusTxt = '⏸ PAUSADO';
+    else if(stVis === 'atrasado') statusTxt = 'ATRASADO';
+    else statusTxt = 'PROGRAMADO';
+
+    // Roteiro visual
+    const roteiro = p.roteiro || 'impressora_coladeira';
+    const etapas = [];
+    const impressora = p.impressora || 'Máq. B Slotter';
+    const maqIcon = impressora.includes('Slotter') ? '🅱️' : '🅰️';
+    etapas.push({nome: impressora, icon: maqIcon, etapaKey: 'impressora', status: p.etapas?.impressora?.status || 'aguardando'});
+    if(roteiro.includes('coladeira'))     etapas.push({nome:'Coladeira',    icon:'📦', etapaKey:'coladeira',    status: p.etapas?.coladeira?.status    || 'aguardando'});
+    if(roteiro.includes('grampeadeira'))  etapas.push({nome:'Grampeadeira', icon:'📌', etapaKey:'grampeadeira', status: p.etapas?.grampeadeira?.status  || 'aguardando'});
+
+    const roteiroHtml = etapas.map((et, i)=>{
+      const isCur = et.etapaKey === etapa;
+      let cor, bg, prefix;
+      if(et.status === 'concluido'){cor='#6ee7b7';bg='rgba(16,185,129,.15)';prefix='✓ ';}
+      else if(isCur){cor='#fbbf24';bg='rgba(245,158,11,.15)';prefix='';}
+      else{cor='var(--text-4)';bg='var(--bg-3)';prefix='';}
+      return `${i>0?'<span style="color:var(--text-4);font-size:12px;margin:0 2px">→</span>':''}
+        <span style="background:${bg};color:${cor};padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap">${prefix}${et.icon} ${et.nome}</span>`;
+    }).join('');
+
+    const bloqueado = !anteriorOk;
+    return `<div class="pedido-card ${bloqueado?'disabled':stVis}" data-pid="${p.id}" style="${bloqueado?'opacity:.5;cursor:not-allowed':''}">
+      <div class="pedido-top">
+        <div><div class="pedido-cliente">${escapeHtml(p.cliente)}</div><div class="pedido-codigo">${escapeHtml(p.codigo||'—')}</div></div>
+        <div class="pedido-status ${bloqueado?'programado':stVis}">${statusTxt}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:8px;flex-wrap:wrap">${roteiroHtml}</div>
+      <div class="pedido-data">
+        <div>Qtd: <span class="qty">${fmt(p.qtd)}</span>${p.jaProduzido>0?` · falta ${fmt(restante)}`:''}</div>
+        <div>${diasTxt}</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+
+  cont.querySelectorAll('[data-pid]').forEach(c=>{
+    c.onclick = ()=>{
+      const p = STATE.pedidos.find(x=>x.id === c.dataset.pid);
+      if(!p) return;
+      if(STATE.concluidos[p.id]){toast('Este pedido já foi concluído neste turno','err');return;}
+      if(!etapaAnteriorConcluida(p)){
+        toast('⏳ Aguardando impressora finalizar antes desta etapa','err');
+        return;
+      }
+      STATE.pedidoAtivo = p;
+      abrirProducao(p);
+    };
+  });
+}
+
+// Abas
+document.querySelectorAll('.tabs-pedidos button').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('.tabs-pedidos button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    STATE.filtroAtivo = b.dataset.filtro;
+    renderListaPedidos();
+  };
+});
+
+// ============== TELA DE PRODUÇÃO ==============
+function abrirProducao(p){
+  document.getElementById('prod-cliente').textContent = p.cliente;
+  document.getElementById('prod-codigo').textContent = p.codigo || '—';
+  document.getElementById('prod-qtd').textContent = fmt(p.qtd);
+  document.getElementById('prod-num').textContent = p.numPed || '—';
+  const maquina = STATE.sessao?.maquina || '—';
+  document.getElementById('prod-maq-atual').textContent = maquina;
+  const dias = diffDias(p.dataEntrega);
+  const entregaTxt = p.dataEntrega ? p.dataEntrega.split('-').reverse().join('/') : '—';
+  document.getElementById('prod-entrega').textContent = entregaTxt + (dias!=null&&dias<0?` (+${Math.abs(dias)}d)`:'');
+
+  // Montar fluxo visual
+  const roteiro = p.roteiro || 'impressora_coladeira';
+  const etapa = etapaParaMaquina(p, maquina);
+  const impressora = p.impressora || 'Máq. B Slotter';
+  const maqIcon = impressora.includes('Slotter') ? '🅱️' : '🅰️';
+  const fluxoEtapas = [
+    {key:'impressora', nome: impressora, icon: maqIcon, status: p.etapas?.impressora?.status || 'aguardando'}
+  ];
+  if(roteiro.includes('coladeira'))    fluxoEtapas.push({key:'coladeira',    nome:'Coladeira',    icon:'📦', status: p.etapas?.coladeira?.status    || 'aguardando'});
+  if(roteiro.includes('grampeadeira')) fluxoEtapas.push({key:'grampeadeira', nome:'Grampeadeira', icon:'📌', status: p.etapas?.grampeadeira?.status  || 'aguardando'});
+
+  document.getElementById('prod-fluxo').innerHTML = fluxoEtapas.map((et, i)=>{
+    const isCur = et.key === etapa;
+    let cor, bg, borda, tamanho;
+    if(et.status === 'concluido'){
+      cor='#6ee7b7'; bg='rgba(16,185,129,.15)'; borda='1px solid rgba(16,185,129,.4)'; tamanho='12px';
+    } else if(isCur){
+      cor='#0f172a'; bg='linear-gradient(135deg,#f59e0b,#fb923c)'; borda='none'; tamanho='13px';
+    } else {
+      cor='var(--text-4)'; bg='var(--bg-3)'; borda='1px dashed var(--line)'; tamanho='11px';
+    }
+    const qtdEtapa = et.status==='concluido' ? ` · ${fmt(p.etapas?.[et.key]?.qtd||0)}cx` : '';
+    return `
+      ${i>0?`<div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="color:var(--text-4);font-size:18px">→</span></div>`:''}
+      <div style="background:${bg};border:${borda};border-radius:10px;padding:8px 14px;text-align:center;min-width:90px">
+        <div style="font-size:20px;margin-bottom:2px">${et.status==='concluido'?'✅':et.icon}</div>
+        <div style="font-size:${tamanho};font-weight:700;color:${cor};font-family:'JetBrains Mono';line-height:1.2">${et.nome}</div>
+        ${et.status==='concluido'?`<div style="font-size:9px;color:#6ee7b7;margin-top:2px">CONCLUÍDO${qtdEtapa}</div>`:isCur?`<div style="font-size:9px;color:#0f172a;font-weight:700;margin-top:2px">▶ AQUI AGORA</div>`:`<div style="font-size:9px;color:var(--text-4);margin-top:2px">aguardando</div>`}
+      </div>`;
+  }).join('');
+
+  // Resetar UI
+  ['step-chapa','step-ajuste','step-prod','step-fim'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.classList.remove('done','active','disabled');
+  });
+  document.getElementById('step-chapa-body').classList.remove('hidden');
+  document.getElementById('step-ajuste-body').classList.add('hidden');
+  document.getElementById('step-prod-body').classList.add('hidden');
+  document.getElementById('step-fim-body').classList.add('hidden');
+  document.getElementById('prod-summary').style.display='none';
+  ['time-chapa','time-ajuste','time-prod','time-fim'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('prod-qtd-real').value='';
+  document.getElementById('prod-motivo').value='';
+  document.getElementById('timer-ajuste').textContent='00:00';
+  document.getElementById('timer-prod').textContent='00:00';
+  pararTimer();
+
+  // Personalizar textos dos steps por máquina
+  const maqLow2 = maquina.toLowerCase();
+  const ehCorteMaq = maqLow2.includes('slotter') || maqLow2.includes('corte');
+  if(ehCorteMaq){
+    document.getElementById('step-chapa-sub').textContent = 'Quando a chapa/papelão chegou na máquina';
+  } else if(maqLow2.includes('coladeira')){
+    document.getElementById('step-chapa-sub').textContent = 'Quando a caixa cortada chegou na coladeira';
+  } else if(maqLow2.includes('grampeadeira')){
+    document.getElementById('step-chapa-sub').textContent = 'Quando a caixa cortada chegou na grampeadeira';
+  }
+
+  // Tem progresso pra esse pedido?
+  if(STATE.progressos[p.id]){
+    aplicarEstadoProgresso(p);
+  } else {
+    // Estado inicial: chapa esperando
+    document.getElementById('step-chapa').classList.add('active');
+    document.getElementById('step-ajuste').classList.add('disabled');
+    document.getElementById('step-prod').classList.add('disabled');
+    document.getElementById('step-fim').classList.add('disabled');
+  }
+  trocarTela('producao');
+}
+
+function aplicarEstadoProgresso(p){
+  const pg = STATE.progressos[p.id];
+  if(!pg) return;
+  pararTimer();
+  // Resetar
+  ['step-chapa','step-ajuste','step-prod','step-fim'].forEach(id=>{
+    document.getElementById(id).classList.remove('done','active','disabled');
+  });
+
+  // Chapa
+  if(pg.chapaTime){
+    document.getElementById('step-chapa').classList.add('done');
+    document.getElementById('step-chapa-body').classList.add('hidden');
+    document.getElementById('time-chapa').textContent = pg.chapaTime;
+    // habilitar ajuste
+    document.getElementById('step-ajuste').classList.add('active');
+    document.getElementById('step-ajuste-body').classList.remove('hidden');
+  } else {
+    document.getElementById('step-chapa').classList.add('active');
+    document.getElementById('step-chapa-body').classList.remove('hidden');
+    document.getElementById('step-ajuste').classList.add('disabled');
+    document.getElementById('step-prod').classList.add('disabled');
+    document.getElementById('step-fim').classList.add('disabled');
+    return;
+  }
+
+  // Ajuste
+  if(pg.ajusteInicioTime){
+    if(pg.prodInicioTime){
+      // ajuste já terminou
+      document.getElementById('step-ajuste').classList.remove('active');
+      document.getElementById('step-ajuste').classList.add('done');
+      document.getElementById('step-ajuste-body').classList.add('hidden');
+      document.getElementById('time-ajuste').textContent = pg.ajusteInicioTime;
+    } else {
+      // ajuste em andamento
+      document.getElementById('step-ajuste').classList.add('active');
+      document.getElementById('step-ajuste-body').classList.remove('hidden');
+      document.getElementById('time-ajuste').textContent = pg.ajusteInicioTime;
+      document.getElementById('prod-motivo').value = pg.motivoAjuste || '';
+      iniciarTimer('ajuste', pg.ajusteInicioIso);
+    }
+    // habilitar produção
+    document.getElementById('step-prod').classList.remove('disabled');
+    document.getElementById('step-prod').classList.add('active');
+    document.getElementById('step-prod-body').classList.remove('hidden');
+  } else {
+    document.getElementById('step-prod').classList.add('disabled');
+    document.getElementById('step-fim').classList.add('disabled');
+    return;
+  }
+
+  // Produção
+  if(pg.prodInicioTime){
+    document.getElementById('step-prod').classList.remove('active');
+    document.getElementById('step-prod').classList.add('done');
+    document.getElementById('time-prod').textContent = pg.prodInicioTime;
+    // mantém o body visível pro caso de querer ver
+    document.getElementById('step-prod-body').classList.add('hidden');
+    iniciarTimer('prod', pg.prodInicioIso);
+    // habilitar fim
+    document.getElementById('step-fim').classList.remove('disabled');
+    document.getElementById('step-fim').classList.add('active');
+    document.getElementById('step-fim-body').classList.remove('hidden');
+  } else {
+    document.getElementById('step-fim').classList.add('disabled');
+  }
+}
+
+// Timers
+function iniciarTimer(tipo, iniciadoEmIso){
+  pararTimer();
+  STATE.timerTipo = tipo;
+  STATE.timerStart = iniciadoEmIso;
+  const tick = ()=>{
+    if(!STATE.timerStart) return;
+    const min = diffMin(STATE.timerStart, nowIso());
+    const el = document.getElementById('timer-'+STATE.timerTipo);
+    if(el) el.textContent = fmtCron(min);
+  };
+  tick();
+  STATE.timerInt = setInterval(tick, 1000);
+}
+function pararTimer(){
+  if(STATE.timerInt){clearInterval(STATE.timerInt);STATE.timerInt=null}
+  STATE.timerStart = null;
+  STATE.timerTipo = null;
+}
+
+// Salvar progresso atual
+function salvarProgresso(pid, dados){
+  if(!STATE.progressos[pid]){
+    STATE.progressos[pid] = {pedidoId: pid, iniciadoEm: nowIso()};
+  }
+  Object.assign(STATE.progressos[pid], dados);
+  save(PK_PROGRESSOS, STATE.progressos);
+}
+
+// Botão voltar
+document.getElementById('btn-voltar').onclick = ()=>{
+  pararTimer();
+  trocarTela('pedidos');
+  renderListaPedidos();
+};
+
+// AÇÕES dos botões
+document.getElementById('btn-chapa').onclick = ()=>{
+  const p = STATE.pedidoAtivo;
+  if(!p) return;
+  salvarProgresso(p.id, {
+    chapaTime: nowTime(),
+    chapaIso: nowIso()
+  });
+  toast('🚚 Chegada da chapa: ' + STATE.progressos[p.id].chapaTime);
+  aplicarEstadoProgresso(p);
+};
+
+document.getElementById('btn-skip-ajuste').onclick = ()=>{
+  // Pular = vai direto pra "iniciar produção" sem registrar tempo de ajuste
+  const p = STATE.pedidoAtivo;
+  if(!p) return;
+  document.getElementById('step-ajuste').classList.remove('active');
+  document.getElementById('step-ajuste').classList.add('done');
+  document.getElementById('step-ajuste-body').classList.add('hidden');
+  document.getElementById('time-ajuste').textContent = '(pulado)';
+  document.getElementById('step-prod').classList.remove('disabled');
+  document.getElementById('step-prod').classList.add('active');
+  document.getElementById('step-prod-body').classList.remove('hidden');
+};
+
+document.getElementById('btn-ajuste').onclick = ()=>{
+  const p = STATE.pedidoAtivo;
+  if(!p) return;
+  salvarProgresso(p.id, {
+    ajusteInicioTime: nowTime(),
+    ajusteInicioIso: nowIso(),
+    motivoAjuste: document.getElementById('prod-motivo').value
+  });
+  toast('🔧 Ajuste iniciado: ' + STATE.progressos[p.id].ajusteInicioTime);
+  aplicarEstadoProgresso(p);
+};
+
+// =============================================
+// PALETIZAÇÃO
+// =============================================
+let PAL = {
+  cxPalete: 0,        // cx por palete definido pelo operador
+  totalPrevisto: 0,   // total previsto (qtd do pedido)
+  paletes: [],        // [{num, cx, confirmado}]
+  ativo: false
+};
+
+function ehColadeira(){
+  const m = (STATE.sessao?.maquina||'').toLowerCase();
+  // Coladeira E Grampeadeira têm paletização
+  return m.includes('coladeira') || m.includes('grampeadeira');
+}
+
+function iniciarPaletizacao(cxPalete){
+  const p = STATE.pedidoAtivo;
+  if(!p) return;
+  PAL.cxPalete = cxPalete;
+  PAL.totalPrevisto = p.qtd;
+  PAL.ativo = true;
+  PAL.paletes = [];
+  // Calcular paletes estimados
+  const total = Math.ceil(p.qtd / cxPalete);
+  for(let i = 1; i <= total; i++){
+    const ehUlt = i === total;
+    const cx = ehUlt ? p.qtd - cxPalete * (total - 1) : cxPalete;
+    PAL.paletes.push({num: i, total, cx, confirmado: false, ehUltimo: ehUlt});
+  }
+  salvarProgresso(p.id, {paletes: PAL.paletes, cxPalete});
+  renderPainelPaletes();
+  document.getElementById('painel-paletes').style.display = 'block';
+}
+
+function renderPainelPaletes(){
+  const lista = document.getElementById('pal-lista');
+  const confirmados = PAL.paletes.filter(x=>x.confirmado);
+  const totalCx = confirmados.reduce((s,x)=>s+x.cx, 0);
+  const falta = PAL.totalPrevisto - totalCx;
+  document.getElementById('pal-count-ok').textContent = confirmados.length;
+  document.getElementById('pal-count-cx').textContent = fmt(totalCx);
+  const faltaEl = document.getElementById('pal-count-falta');
+  faltaEl.textContent = falta > 0 ? `faltam ${fmt(falta)}cx` : '';
+
+  lista.innerHTML = PAL.paletes.map((pal, i)=>{
+    if(pal.confirmado){
+      return `<div class="pal-item done">
+        <div class="pal-num">Palete ${pal.num}/${pal.total}</div>
+        <div class="pal-cx">${fmt(pal.cx)} caixas</div>
+        <div class="pal-status">✅</div>
+      </div>`;
+    }
+    // Próximo a confirmar
+    const prox = PAL.paletes.findIndex(x=>!x.confirmado);
+    if(prox === i){
+      if(pal.ehUltimo){
+        return `<div class="pal-item ultimo">
+          <div class="pal-num">Palete ${pal.num}/${pal.total}</div>
+          <div style="flex:1">
+            <input type="number" id="pal-ultimo-cx" value="${pal.cx}" min="1"
+              style="width:120px;padding:6px 10px;font-family:'JetBrains Mono';font-size:16px;font-weight:700;background:var(--bg-3);border:2px solid var(--amber);border-radius:6px;color:var(--amber-2);text-align:center">
+            <div style="font-size:10px;color:var(--text-3);margin-top:2px">← saldo real</div>
+          </div>
+          <div class="pal-status">📝</div>
+        </div>`;
+      }
+      return `<div class="pal-item" style="border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.05)">
+        <div class="pal-num">Palete ${pal.num}/${pal.total}</div>
+        <div class="pal-cx">${fmt(pal.cx)} caixas</div>
+        <div class="pal-status">🔲 próximo</div>
+      </div>`;
+    }
+    // Futuro
+    return `<div class="pal-item" style="opacity:.35">
+      <div class="pal-num">Palete ${pal.num}/${pal.total}</div>
+      <div class="pal-cx">${fmt(pal.cx)} caixas</div>
+      <div class="pal-status">⬜</div>
+    </div>`;
+  }).join('');
+
+  // Botão confirmar
+  const btnConf = document.getElementById('pal-btn-confirmar');
+  const prox = PAL.paletes.find(x=>!x.confirmado);
+  if(!prox){
+    btnConf.textContent = '✅ Todos os paletes confirmados!';
+    btnConf.disabled = true;
+    btnConf.style.background = 'rgba(16,185,129,.2)';
+    btnConf.style.color = '#6ee7b7';
+  } else {
+    btnConf.disabled = false;
+    btnConf.style.background = '';
+    btnConf.style.color = '';
+    if(prox.ehUltimo){
+      btnConf.textContent = `✓ Confirmar palete ${prox.num} (último — saldo real)`;
+    } else {
+      btnConf.textContent = `✓ Confirmar palete ${prox.num}/${prox.total} · ${fmt(prox.cx)} cx`;
+    }
+  }
+}
+
+document.getElementById('pal-btn-confirmar').onclick = ()=>{
+  const prox = PAL.paletes.find(x=>!x.confirmado);
+  if(!prox) return;
+  if(prox.ehUltimo){
+    const inputCx = document.getElementById('pal-ultimo-cx');
+    const cx = +(inputCx?.value||0);
+    if(!cx||cx<=0){toast('Informe o saldo real do último palete','err');return}
+    prox.cx = cx;
+  }
+  prox.confirmado = true;
+  salvarProgresso(STATE.pedidoAtivo.id, {paletes: PAL.paletes});
+  renderPainelPaletes();
+  const conf = PAL.paletes.filter(x=>x.confirmado);
+  const total = PAL.paletes.length;
+  toast(`✅ Palete ${conf.length}/${total} confirmado · ${fmt(prox.cx)} cx`);
+};
+
+// Preview no modal de paletização
+document.getElementById('pal-cx-palete').oninput = ()=>{
+  const cx = +document.getElementById('pal-cx-palete').value||0;
+  const p = STATE.pedidoAtivo;
+  const prev = document.getElementById('pal-preview');
+  if(!cx||!p){prev.textContent='';return}
+  const total = Math.ceil(p.qtd/cx);
+  const saldo = p.qtd - cx*(total-1);
+  prev.innerHTML = `<strong style="color:var(--amber-2);font-size:18px">${total} paletes</strong><br>
+    ${total-1}× ${fmt(cx)}cx + 1× ${fmt(saldo)}cx saldo`;
+};
+
+document.getElementById('pal-confirmar').onclick = ()=>{
+  const cx = +document.getElementById('pal-cx-palete').value||0;
+  if(!cx||cx<=0){toast('Informe a quantidade por palete','err');return}
+  document.getElementById('modal-paletizacao').classList.remove('show');
+  iniciarProducaoReal();
+  iniciarPaletizacao(cx);
+};
+
+document.getElementById('pal-pular').onclick = ()=>{
+  document.getElementById('modal-paletizacao').classList.remove('show');
+  iniciarProducaoReal();
+};
+
+function iniciarProducaoReal(){
+  const p = STATE.pedidoAtivo;
+  if(!p) return;
+  const pg = STATE.progressos[p.id] || {};
+  const updates = {prodInicioTime: nowTime(), prodInicioIso: nowIso()};
+  if(!pg.ajusteInicioTime){
+    updates.ajusteInicioTime = updates.prodInicioTime;
+    updates.ajusteInicioIso = updates.prodInicioIso;
+  }
+  salvarProgresso(p.id, updates);
+  toast('▶ Produção iniciada: ' + STATE.progressos[p.id].prodInicioTime);
+  aplicarEstadoProgresso(p);
+}
+
+document.getElementById('btn-prod').onclick = ()=>{
+  const p = STATE.pedidoAtivo;
+  if(!p) return;
+  // Se for coladeira/grampeadeira → abre modal de paletização
+  if(ehColadeira()){
+    // Restaurar paletes se já tinha progresso
+    const pg = STATE.progressos[p.id]||{};
+    if(pg.paletes && pg.paletes.length > 0){
+      PAL.paletes = pg.paletes;
+      PAL.cxPalete = pg.cxPalete||0;
+      PAL.totalPrevisto = p.qtd;
+      PAL.ativo = true;
+      iniciarProducaoReal();
+      renderPainelPaletes();
+      document.getElementById('painel-paletes').style.display = 'block';
+    } else {
+      document.getElementById('pal-cx-palete').value = '';
+      document.getElementById('pal-preview').textContent = '';
+      document.getElementById('modal-paletizacao').classList.add('show');
+    }
+  } else {
+    iniciarProducaoReal();
+  }
+};
+
+document.getElementById('btn-pausar').onclick = ()=>{
+  const p = STATE.pedidoAtivo;
+  if(!p) return;
+  confirmDialog('Pausar pedido',
+    `Pausar a produção de ${p.cliente}? O progresso fica salvo. Você pode voltar a qualquer momento.`,
+    ()=>{
+      pararTimer();
+      toast('⏸ Pedido pausado · progresso salvo');
+      trocarTela('pedidos');
+      renderListaPedidos();
+    });
+};
+
+document.getElementById('btn-fim').onclick = ()=>{
+  const p = STATE.pedidoAtivo;
+  if(!p) return;
+  const qtd = +document.getElementById('prod-qtd-real').value;
+  if(!qtd || qtd <= 0){toast('Informe a quantidade produzida','err');return}
+  pararTimer();
+  salvarProgresso(p.id, {
+    fimTime: nowTime(),
+    fimIso: nowIso(),
+    qtd
+  });
+  const pg = STATE.progressos[p.id];
+  // UI: mostrar fim
+  document.getElementById('step-fim').classList.remove('active');
+  document.getElementById('step-fim').classList.add('done');
+  document.getElementById('time-fim').textContent = pg.fimTime;
+  mostrarResumo(pg);
+
+  // Após 2s, finalizar e salvar
+  setTimeout(()=>{
+    salvarRegistroPendente(p);
+    const tProd = diffMin(pg.prodInicioIso, pg.fimIso) / 60;
+    const media = tProd > 0 ? Math.round(qtd/tProd) : 0;
+    const palsConf = (pg.paletes||[]).filter(x=>x.confirmado);
+    STATE.concluidos[p.id] = {
+      pedidoId: p.id, cliente: p.cliente, codigo: p.codigo,
+      qtdRealizada: qtd, hora: pg.fimTime,
+      tProd: tProd > 0 ? tProd : null,
+      media: media > 0 ? media : null,
+      paletes: palsConf, cxPalete: pg.cxPalete||0,
+      totalPaletes: palsConf.length, operador: STATE.sessao?.operador||'',
+      data: ymd(today()), concluidoEm: nowIso()
+    };
+    save(PK_CONCLUIDOS, STATE.concluidos);
+    delete STATE.progressos[p.id];
+    save(PK_PROGRESSOS, STATE.progressos);
+    // Esconder painel de paletes
+    document.getElementById('painel-paletes').style.display = 'none';
+    PAL.ativo = false;
+
+    // Montar texto de sucesso
+    let det = `${fmt(qtd)} caixas de ${p.cliente} registradas.`;
+    if(palsConf.length > 0){
+      const cxTotalPal = palsConf.reduce((s,x)=>s+x.cx,0);
+      det += `\n📦 ${palsConf.length} palete${palsConf.length>1?'s':''} · ${fmt(cxTotalPal)} cx confirmadas`;
+    }
+    det += `\nUse "Enviar registros" para sincronizar.`;
+    document.getElementById('sucesso-detalhe').textContent = det;
+
+    // Mostrar botão de imprimir etiquetas se teve paletes
+    const btnImp = document.getElementById('btn-imprimir-etiquetas');
+    if(palsConf.length > 0){
+      btnImp.style.display = 'flex';
+      btnImp.onclick = ()=> imprimirEtiquetas({
+        cliente: p.cliente, codigo: p.codigo, numPed: p.numPed,
+        paletes: palsConf, operador: STATE.sessao?.operador||'',
+        data: ymd(today())
+      });
+    } else {
+      btnImp.style.display = 'none';
+    }
+    trocarTela('sucesso');
+  }, 1800);
+};
+
+function mostrarResumo(pg){
+  const tEspera = diffMin(pg.chapaIso, pg.ajusteInicioIso || pg.prodInicioIso) / 60;
+  const tAjuste = diffMin(pg.ajusteInicioIso, pg.prodInicioIso) / 60;
+  const tProd = diffMin(pg.prodInicioIso, pg.fimIso) / 60;
+  const media = tProd > 0 ? Math.round(pg.qtd/tProd) : 0;
+  document.getElementById('sum-espera').textContent = tEspera>0?fmtH(tEspera):'—';
+  document.getElementById('sum-ajuste').textContent = tAjuste>0?fmtH(tAjuste):'—';
+  document.getElementById('sum-prod').textContent = tProd>0?fmtH(tProd):'—';
+  document.getElementById('sum-media').textContent = media>0?fmt(media)+'/h':'—';
+  document.getElementById('prod-summary').style.display='block';
+}
+
+function salvarRegistroPendente(p){
+  const pg = STATE.progressos[p.id];
+  if(!pg) return;
+  const maquina = STATE.sessao?.maquina || '';
+  const etapa = etapaParaMaquina(p, maquina) || 'impressora';
+  const reg = {
+    id: uuid(),
+    pedidoId: p.id,
+    numPed: p.numPed,
+    cliente: p.cliente,
+    codigo: p.codigo,
+    data: ymd(today()),
+    turno: detectarTurno(),
+    maquina,
+    operador: STATE.sessao?.operador || '',
+    etapa,
+    chegada: pg.chapaTime || '',
+    inicioAjuste: pg.ajusteInicioTime || '',
+    inicio: pg.prodInicioTime || '',
+    fim: pg.fimTime || '',
+    qtd: pg.qtd,
+    motivoAjuste: pg.motivoAjuste || '',
+    paletes: (pg.paletes||[]).filter(x=>x.confirmado),
+    cxPalete: pg.cxPalete || 0,
+    totalPaletes: (pg.paletes||[]).filter(x=>x.confirmado).length,
+    obs: ''
+  };
+  STATE.pendentes.push(reg);
+  save(PK_PENDENTES, STATE.pendentes);
+
+  // Atualizar etapa no Firebase em tempo real
+  if(typeof db !== 'undefined' && db){
+    const etapaData = {
+      status: 'concluido',
+      maquina,
+      operador: STATE.sessao?.operador || '',
+      qtd: pg.qtd,
+      fim: pg.fimTime,
+      data: ymd(today())
+    };
+    db.collection('jp_sistema').doc('pedidos_operador').get().then(doc=>{
+      if(!doc.exists) return;
+      const pedidos = doc.data().pedidos || [];
+      const idx = pedidos.findIndex(x=>x.id===p.id);
+      if(idx >= 0){
+        if(!pedidos[idx].etapas) pedidos[idx].etapas = {};
+        pedidos[idx].etapas[etapa] = etapaData;
+        db.collection('jp_sistema').doc('pedidos_operador').update({pedidos});
+      }
+    }).catch(()=>{});
+  }
+}
+
+function detectarTurno(){
+  const h = new Date().getHours();
+  return (h >= 6 && h < 15) ? 1 : 2;
+}
+
+document.getElementById('btn-novo-pedido').onclick = ()=>{
+  trocarTela('pedidos');
+  renderListaPedidos();
+};
+
+// =============================================
+// IMPRESSÃO DE ETIQUETAS A4 — 1 por página
+// =============================================
+function imprimirEtiquetas({cliente, codigo, numPed, paletes, operador, data}){
+  const dataFmt = data ? data.split('-').reverse().join('/') : new Date().toLocaleDateString('pt-BR');
+  const total = paletes.length;
+
+  const etiquetas = paletes.map(pal=>`
+    <div class="etiqueta">
+      <div class="et-empresa">JP EMBALAGENS</div>
+      <div class="et-divider"></div>
+      <div class="et-campo"><span class="et-l">Cliente</span><span class="et-v">${esc(cliente)}</span></div>
+      <div class="et-campo"><span class="et-l">Produto</span><span class="et-v">${esc(codigo||'—')}</span></div>
+      <div class="et-campo"><span class="et-l">Pedido</span><span class="et-v">${esc(numPed||'—')}</span></div>
+      <div class="et-divider"></div>
+      <div class="et-palete-num">PALETE ${pal.num} / ${total}</div>
+      <div class="et-caixas">${esc(String(pal.cx))}</div>
+      <div class="et-caixas-label">CAIXAS</div>
+      <div class="et-divider"></div>
+      <div class="et-campo"><span class="et-l">Data</span><span class="et-v">${dataFmt}</span></div>
+      <div class="et-campo"><span class="et-l">Operador</span><span class="et-v">${esc(operador||'—')}</span></div>
+    </div>
+  `).join('<div class="page-break"></div>');
+
+  function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Etiquetas JP Embalagens</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;background:#fff;color:#111}
+  @media print{
+    html,body{width:210mm;height:297mm}
+    .page-break{page-break-after:always;height:0}
+    .etiqueta{page-break-inside:avoid}
+  }
+  .etiqueta{
+    width:190mm;margin:10mm auto;padding:14mm;
+    border:3px solid #111;border-radius:4mm;
+    display:flex;flex-direction:column;gap:6mm;
+    min-height:260mm;
+  }
+  .et-empresa{
+    font-size:22pt;font-weight:900;letter-spacing:2px;
+    text-align:center;color:#111;
+    border-bottom:2px solid #111;padding-bottom:5mm;
+  }
+  .et-divider{height:1px;background:#ccc;margin:2mm 0}
+  .et-campo{display:flex;justify-content:space-between;align-items:baseline;gap:4mm;font-size:13pt}
+  .et-l{color:#555;font-weight:400;min-width:60mm}
+  .et-v{font-weight:700;color:#111;text-align:right;word-break:break-word;max-width:100mm}
+  .et-palete-num{
+    text-align:center;font-size:28pt;font-weight:900;
+    background:#111;color:#fff;padding:6mm 10mm;
+    border-radius:3mm;letter-spacing:2px;
+  }
+  .et-caixas{
+    text-align:center;font-size:72pt;font-weight:900;
+    color:#111;line-height:1;margin:4mm 0 0;
+  }
+  .et-caixas-label{
+    text-align:center;font-size:18pt;font-weight:700;
+    color:#555;letter-spacing:4px;text-transform:uppercase;
+  }
+</style>
+</head><body>${etiquetas}</body></html>`;
+
+  const win = window.open('', '_blank');
+  if(win){
+    win.document.write(html);
+    win.document.close();
+    setTimeout(()=>win.print(), 500);
+  } else {
+    // Fallback: download HTML
+    const blob = new Blob([html], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=`etiquetas_${esc(cliente)}_${dataFmt.replace(/\//g,'-')}.html`;
+    a.click(); URL.revokeObjectURL(url);
+    toast('Arquivo de etiquetas baixado');
+  }
+}
+
+// ============== ENVIAR REGISTROS ==============
+document.getElementById('btn-enviar').onclick = ()=>{
+  if(STATE.pendentes.length === 0){toast('Nenhum registro pendente','err');return}
+  const payload = {
+    tipo: 'jp_registros_operador',
+    operador: STATE.sessao.operador,
+    maquina: STATE.sessao.maquina,
+    geradoEm: nowIso(),
+    registros: STATE.pendentes
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0,16);
+  a.href = url;
+  a.download = `registros_${STATE.sessao.operador.replace(/\s+/g,'_')}_${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  confirmDialog('Arquivo gerado',
+    `${STATE.pendentes.length} registro(s) exportado(s). Envie pro supervisor importar no sistema. Limpar pendentes agora?`,
+    ()=>{
+      STATE.pendentes = [];
+      save(PK_PENDENTES, STATE.pendentes);
+      renderListaPedidos();
+      toast('Pendentes limpos');
+    });
+};
+
+// ============== BOOT ==============
+(function init(){
+  STATE.operadores = load(PK_OPERADORES, []);
+  STATE.sessao = load(PK_SESSAO, null);
+  STATE.pedidos = load(PK_PEDIDOS, []);
+  STATE.pendentes = load(PK_PENDENTES, []);
+  STATE.progressos = load(PK_PROGRESSOS, {});
+  STATE.concluidos = load(PK_CONCLUIDOS, {});
+  migrarProgressoAntigo();
+  renderOperadores();
+  checkLoginCompleto();
+  if(STATE.sessao && STATE.sessao.operador){
+    entrarApp();
+  }
+})();
+</script>
+
+<!-- FIREBASE — SINCRONIZAÇÃO AUTOMÁTICA -->
+<script>
+const FB_CONFIG = {
+  apiKey: "AIzaSyDIX4G0-vqbw8h_lZM0w8gTsJM7-tBFd70",
+  authDomain: "jpproducao-6b59f.firebaseapp.com",
+  projectId: "jpproducao-6b59f",
+  storageBucket: "jpproducao-6b59f.firebasestorage.app",
+  messagingSenderId: "319945051169",
+  appId: "1:319945051169:web:c951da8d6c34de351c2760"
+};
+
+let db = null;
+let fbUnsubPedidos = null;
+
+function initFirebase(){
+  try {
+    firebase.initializeApp(FB_CONFIG);
+    db = firebase.firestore();
+    document.getElementById('fb-status').innerHTML =
+      '<span style="color:#6ee7b7">● Firebase conectado — pedidos serão carregados automaticamente</span>';
+    // Se já tem sessão ativa, buscar pedidos automaticamente
+    if(STATE.sessao && STATE.sessao.operador){
+      escutarPedidosFirebase();
+    }
+  } catch(e){
+    document.getElementById('fb-status').innerHTML =
+      '<span style="color:#fca5a5">⚠ Firebase offline — use o arquivo manual</span>';
+    console.warn('Firebase erro:', e.message);
+  }
+}
+
+// Escutar pedidos do Firebase em tempo real
+function escutarPedidosFirebase(){
+  if(!db) return;
+  if(fbUnsubPedidos) fbUnsubPedidos();
+  document.getElementById('fb-status').innerHTML =
+    '<span style="color:#fbbf24">⏳ Buscando pedidos...</span>';
+  fbUnsubPedidos = db.collection('jp_sistema').doc('pedidos_operador')
+    .onSnapshot(doc => {
+      if(doc.exists && doc.data().pedidos){
+        const pedidos = doc.data().pedidos;
+        const maquina = STATE.sessao?.maquina || '';
+        // IMPORTANTE: inclui roteiro, impressora e etapas pra filtrar por máquina
+        STATE.pedidos = pedidos
+          .filter(p => p.statusOp === 'programado' || p.statusOp === 'em_producao')
+          .map(p => ({
+            id: p.id, cliente: p.cliente, codigo: p.codigo,
+            qtd: p.qtd, cxh: p.cxh, dataEntrega: p.dataEntrega,
+            statusOp: p.statusOp,
+            roteiro: p.roteiro || 'impressora_coladeira',
+            impressora: p.impressora || 'Máq. B Slotter',
+            etapas: p.etapas || {}, // ← CRUCIAL: status de cada etapa
+            numPed: p._numPed || '',
+            jaProduzido: (p.registros||[]).reduce((s,r)=>s+(+r.qtd||0),0)
+          }))
+          .filter(p => {
+            // Filtrar só pedidos que passam por esta máquina
+            const etapa = etapaParaMaquina(p, maquina);
+            return etapa !== null;
+          });
+        save(PK_PEDIDOS, STATE.pedidos);
+        const ts = doc.data().publicadoEm;
+        const tsStr = ts ? new Date(ts.toMillis()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+        save('jp_op_dataload', new Date().toISOString());
+        document.getElementById('fb-status').innerHTML =
+          `<span style="color:#6ee7b7">● Firebase conectado</span>`;
+        const disponiveis = STATE.pedidos.filter(p => etapaAnteriorConcluida(p)).length;
+        document.getElementById('sync-data').textContent =
+          `${STATE.pedidos.length} pedidos${disponiveis > 0 ? ` · ${disponiveis} disponíveis` : ''} ${tsStr ? '· publicados às '+tsStr : ''}`;
+        renderListaPedidos();
+        // Limpar concluídos que não existem mais
+        const idsValidos = new Set(STATE.pedidos.map(p=>p.id));
+        Object.keys(STATE.concluidos).forEach(pid=>{
+          if(!idsValidos.has(pid)) delete STATE.concluidos[pid];
+        });
+        save(PK_CONCLUIDOS, STATE.concluidos);
+      } else {
+        document.getElementById('sync-data').textContent =
+          'Nenhum pedido publicado ainda · aguardando supervisor';
+      }
+    }, err => {
+      console.warn('Listener erro:', err.message);
+      document.getElementById('fb-status').innerHTML =
+        '<span style="color:#fca5a5">⚠ Erro de conexão — use o arquivo manual</span>';
+    });
+}
+
+// Enviar registros via Firebase (automático)
+async function enviarRegistrosFirebase(){
+  if(!db || STATE.pendentes.length === 0) return false;
+  try {
+    const batch = db.batch();
+    STATE.pendentes.forEach(r => {
+      const ref = db.collection('jp_registros_operador').doc(r.id || uuid());
+      batch.set(ref, {
+        ...r,
+        importado: false,
+        enviadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    await batch.commit();
+    return true;
+  } catch(e){
+    console.warn('Erro ao enviar Firebase:', e.message);
+    return false;
+  }
+}
+
+// Sobescrever btn-enviar pra usar Firebase automaticamente
+window.addEventListener('load', ()=>{
+  // iOS Safari: aguardar Firebase SDK carregar com retry
+  let tentativas = 0;
+  const maxTentativas = 20; // tenta por 10 segundos
+  function tentarConectar(){
+    tentativas++;
+    if(typeof firebase !== 'undefined' && firebase.app){
+      initFirebase();
+    } else if(tentativas < maxTentativas){
+      setTimeout(tentarConectar, 500);
+    } else {
+      document.getElementById('fb-status').innerHTML =
+        '<span style="color:#fca5a5">⚠ Firebase não carregou — use o arquivo manual</span>';
+    }
+  }
+  tentarConectar();
+
+  const btnEnviar = document.getElementById('btn-enviar');
+  if(btnEnviar){
+    btnEnviar.onclick = async ()=>{
+      if(STATE.pendentes.length === 0){ toast('Nenhum registro pendente','err'); return; }
+      // Tentar Firebase primeiro
+      if(db){
+        const ok = await enviarRegistrosFirebase();
+        if(ok){
+          const n = STATE.pendentes.length;
+          // Limpar pendentes após enviar
+          STATE.pendentes = [];
+          save(PK_PENDENTES, STATE.pendentes);
+          renderListaPedidos();
+          toast(`✅ ${n} registro${n!==1?'s':''} enviados automaticamente!`);
+          return;
+        }
+      }
+      // Fallback: arquivo JSON
+      const payload = {
+        tipo: 'jp_registros_operador',
+        operador: STATE.sessao.operador,
+        maquina: STATE.sessao.maquina,
+        geradoEm: new Date().toISOString(),
+        registros: STATE.pendentes
+      };
+      const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().replace(/[:.]/g,'-').slice(0,16);
+      a.href=url; a.download=`registros_${(STATE.sessao.operador||'op').replace(/\s+/g,'_')}_${stamp}.json`;
+      a.click(); URL.revokeObjectURL(url);
+      // Perguntar se quer limpar
+      if(confirm(`${STATE.pendentes.length} registro(s) exportados. Limpar pendentes agora?`)){
+        STATE.pendentes=[]; save(PK_PENDENTES,STATE.pendentes);
+        renderListaPedidos(); toast('Pendentes limpos');
+      }
+    };
+  }
+
+  // Escutar pedidos assim que fizer login
+  const origEntrarApp = window.entrarApp;
+  if(typeof entrarApp === 'function'){
+    const _origEntrar = entrarApp;
+    window.entrarApp = function(){
+      _origEntrar.call(this);
+      if(db) escutarPedidosFirebase();
+    };
+  }
+});
+</script>
+</body>
+</html>
