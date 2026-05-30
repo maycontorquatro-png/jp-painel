@@ -527,6 +527,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
   <button class="tab" data-view="perdas" data-mod="analises" style="display:none">📊 Perdas</button>
   <button class="tab" data-view="velocidades" data-mod="analises" style="display:none">⚡ Velocidades</button>
   <button class="tab" data-view="ocorrencias" data-mod="analises" style="display:none">⚠️ Ocorrências</button>
+  <button class="tab" data-view="manutencoes" data-mod="analises" style="display:none">🔧 Manutenção</button>
 </div>
 
 <div class="view active" id="view-dashboard">
@@ -1012,6 +1013,40 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
   <div style="margin-top:14px;background:var(--bg-1);border:1px solid var(--line);border-radius:12px;padding:16px">
     <div style="font-family:'Oswald';font-size:14px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:12px">🔎 Detalhamento por cliente (quais problemas e ondas dão mais)</div>
     <div id="oc-detalhe-cliente"></div>
+  </div>
+</div>
+
+<!-- v2.4.0 — Painel de Manutenção -->
+<div class="view" id="view-manutencoes">
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi k-amber"><div class="kpi-label">🔧 Total</div><div class="kpi-value" id="mnt-kpi-total">0</div><div class="kpi-sub">solicitações</div></div>
+    <div class="kpi k-red"><div class="kpi-label">🔴 Urgentes abertas</div><div class="kpi-value" id="mnt-kpi-urgentes">0</div><div class="kpi-sub">precisam atenção</div></div>
+    <div class="kpi k-blue"><div class="kpi-label">⏳ Abertas</div><div class="kpi-value" id="mnt-kpi-abertas">0</div><div class="kpi-sub">pendentes</div></div>
+    <div class="kpi k-violet"><div class="kpi-label">✅ Resolvidas</div><div class="kpi-value" id="mnt-kpi-resolvidas">0</div><div class="kpi-sub">concluídas</div></div>
+  </div>
+
+  <div class="rel-toolbar" style="flex-wrap:wrap">
+    <div class="rel-search"><input type="text" id="mnt-q" placeholder="🔎 Buscar operador, máquina, descrição..."></div>
+    <select id="mnt-f-maquina" style="background:var(--bg-2);border:1px solid var(--line);color:var(--text-1);padding:8px;border-radius:6px;font-size:13px"><option value="">Todas as máquinas</option></select>
+    <select id="mnt-f-urg" style="background:var(--bg-2);border:1px solid var(--line);color:var(--text-1);padding:8px;border-radius:6px;font-size:13px">
+      <option value="">Todas urgências</option>
+      <option value="urgente">🔴 Urgente</option>
+      <option value="normal">🟡 Normal</option>
+      <option value="baixa">🟢 Baixa</option>
+    </select>
+    <select id="mnt-f-status" style="background:var(--bg-2);border:1px solid var(--line);color:var(--text-1);padding:8px;border-radius:6px;font-size:13px">
+      <option value="">Todos status</option>
+      <option value="aberta">⏳ Abertas</option>
+      <option value="resolvida">✅ Resolvidas</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" id="mnt-csv">↓ CSV</button>
+    <button class="btn btn-sm" id="mnt-postar" style="background:rgba(37,211,102,.15);color:#25D366;border:1px solid rgba(37,211,102,.4);font-size:12px">📱 Postar no grupo</button>
+  </div>
+
+  <div id="mnt-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-top:14px"></div>
+  <div id="mnt-empty" class="empty" style="display:none">
+    <div class="empty-icon">🔧</div>
+    <div class="empty-text">Nenhuma manutenção registrada.</div>
   </div>
 </div>
 
@@ -3894,7 +3929,7 @@ const MODULOS = {
   comercial: ['orcamentos','orc-onda-config'],
   cadastros: ['cad-clientes','cad-vendedores','cad-caixas','cad-papeis','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores'],
   expedicao: ['entregas','escalas','exp-carregar','exp-historico'],
-  analises: ['graficos','produtividade','abc','eficiencia','perdas','velocidades','ocorrencias']
+  analises: ['graficos','produtividade','abc','eficiencia','perdas','velocidades','ocorrencias','manutencoes']
 };
 const VIEW_TO_MODULE = {};
 Object.entries(MODULOS).forEach(([mod,views]) => views.forEach(v => VIEW_TO_MODULE[v] = mod));
@@ -3948,6 +3983,8 @@ document.querySelectorAll('[data-view]').forEach(b=>{b.onclick=()=>{
   if(STATE.view === 'chat' && typeof renderPcpConvs === 'function'){ renderPcpConvs(); if(PCP_CHAT_ATIVO) renderPcpConversa(); }
   // v1.9.6 — Renderizar ocorrências ao entrar na view
   if(STATE.view === 'ocorrencias' && typeof renderOcorrencias === 'function') renderOcorrencias();
+  // v2.4.0 — Renderizar manutenções ao entrar na view
+  if(STATE.view === 'manutencoes' && typeof renderManutencoes === 'function') renderManutencoes();
   renderAll();
 }});
 
@@ -12919,6 +12956,168 @@ function ocCSV(){
   toast('✓ CSV exportado');
 }
 
+// ============== v2.4.0 — MANUTENÇÃO (PCP) ==============
+let MANUTENCOES = [];
+const MNT_FILTROS = { q:'', maquina:'', urg:'', status:'' };
+const MNT_URG_ORDEM = { urgente:0, normal:1, baixa:2 };
+
+async function carregarManutencoes(){
+  if(typeof db === 'undefined' || !db) return;
+  try {
+    const doc = await db.collection('jp_sistema').doc('manutencoes').get();
+    MANUTENCOES = doc.exists ? (doc.data().manutencoes || []) : [];
+    db.collection('jp_sistema').doc('manutencoes').onSnapshot(d => {
+      if(d.exists){
+        MANUTENCOES = d.data().manutencoes || [];
+        if(STATE.view === 'manutencoes') renderManutencoes();
+      }
+    });
+  } catch(e){ console.warn('Erro ao carregar manutenções:', e.message); }
+}
+
+function mntFiltradas(){
+  return MANUTENCOES.filter(m => {
+    if(MNT_FILTROS.maquina && m.maquina !== MNT_FILTROS.maquina) return false;
+    if(MNT_FILTROS.urg && m.urgencia !== MNT_FILTROS.urg) return false;
+    if(MNT_FILTROS.status && (m.status||'aberta') !== MNT_FILTROS.status) return false;
+    if(MNT_FILTROS.q){
+      const q = MNT_FILTROS.q.toLowerCase();
+      const txt = `${m.operadorNome||''} ${m.maquina||''} ${m.descricao||''} ${m.tipoLabel||''}`.toLowerCase();
+      if(!txt.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderManutencoes(){
+  // Filtro de máquinas
+  const fmaq = document.getElementById('mnt-f-maquina');
+  if(fmaq){
+    const maquinas = Array.from(new Set(MANUTENCOES.map(m=>m.maquina).filter(Boolean))).sort();
+    const atual = fmaq.value;
+    fmaq.innerHTML = '<option value="">Todas as máquinas</option>' + maquinas.map(mq=>`<option value="${escapeHtml(mq)}">${escapeHtml(mq)}</option>`).join('');
+    fmaq.value = atual;
+  }
+  // KPIs
+  const abertas = MANUTENCOES.filter(m => (m.status||'aberta')!=='resolvida');
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('mnt-kpi-total', MANUTENCOES.length);
+  set('mnt-kpi-urgentes', abertas.filter(m=>m.urgencia==='urgente').length);
+  set('mnt-kpi-abertas', abertas.length);
+  set('mnt-kpi-resolvidas', MANUTENCOES.filter(m=>(m.status||'aberta')==='resolvida').length);
+
+  // Lista ordenada: abertas antes, urgentes no topo, mais recentes primeiro
+  const lista = mntFiltradas().slice().sort((a,b)=>{
+    const ra=(a.status||'aberta')==='resolvida'?1:0, rb=(b.status||'aberta')==='resolvida'?1:0;
+    if(ra!==rb) return ra-rb;
+    const ua=MNT_URG_ORDEM[a.urgencia]??1, ub=MNT_URG_ORDEM[b.urgencia]??1;
+    if(ua!==ub) return ua-ub;
+    return (b.registradoEm||'').localeCompare(a.registradoEm||'');
+  });
+  const cont = document.getElementById('mnt-lista');
+  const empty = document.getElementById('mnt-empty');
+  if(!cont) return;
+  if(!lista.length){ cont.innerHTML=''; if(empty) empty.style.display='block'; return; }
+  if(empty) empty.style.display='none';
+  const corUrg = { baixa:'#6ee7b7', normal:'#fbbf24', urgente:'#fca5a5' };
+  cont.innerHTML = lista.map(m => {
+    const resolvida = (m.status||'aberta')==='resolvida';
+    const cor = corUrg[m.urgencia] || '#fbbf24';
+    const fotos = (m.fotos||[]).filter(f=>typeof f==='string' && f);
+    const thumbs = fotos.slice(0,4).map(f=>`<div style="width:54px;height:54px;border-radius:6px;overflow:hidden;border:1px solid var(--line);cursor:pointer" onclick="abrirFotoMnt('${f}')"><img src="${f}" style="width:100%;height:100%;object-fit:cover"></div>`).join('');
+    return `<div style="background:var(--bg-1);border:1px solid var(--line);border-left:3px solid ${cor};border-radius:10px;padding:14px;opacity:${resolvida?'.55':'1'}">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:6px">
+        <div style="font-family:'Oswald';font-size:15px;font-weight:700;color:var(--text-1)">${escapeHtml(m.maquina||'—')}</div>
+        <span style="font-size:11px;font-weight:700;color:${cor};white-space:nowrap">${escapeHtml(m.urgenciaLabel||'')}</span>
+      </div>
+      <div style="font-size:13px;color:var(--text-2);margin-bottom:4px">${escapeHtml(m.tipoLabel||'')}</div>
+      <div style="font-size:13px;color:var(--text-1);margin-bottom:8px">${escapeHtml(m.descricao||'')}</div>
+      <div style="font-size:11px;color:var(--text-4);margin-bottom:8px">👤 ${escapeHtml(m.operadorNome||'—')} · ${m.data||''} ${m.hora||''}</div>
+      ${thumbs?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${thumbs}</div>`:''}
+      ${resolvida
+        ? `<div style="font-size:12px;color:#6ee7b7;font-weight:600">✅ Resolvida</div>`
+        : `<button class="btn btn-sm" onclick="marcarManutencaoResolvida('${m.id}')" style="background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.4);width:100%">✅ Marcar como resolvida</button>`}
+    </div>`;
+  }).join('');
+}
+
+window.abrirFotoMnt = url => {
+  const img = document.getElementById('foto-grande-img');
+  if(img){ img.src = url; abrirModal('modal-foto-grande'); }
+};
+
+async function marcarManutencaoResolvida(id){
+  const m = MANUTENCOES.find(x=>x.id===id);
+  if(!m) return;
+  const quando = new Date().toISOString();
+  m.status = 'resolvida'; m.resolvidaEm = quando;
+  renderManutencoes();
+  if(typeof db !== 'undefined' && db){
+    try {
+      const docRef = db.collection('jp_sistema').doc('manutencoes');
+      const snap = await docRef.get();
+      let lista = snap.exists ? (snap.data().manutencoes||[]) : [];
+      lista = lista.map(x => x.id===id ? {...x, status:'resolvida', resolvidaEm:quando} : x);
+      await docRef.set({ manutencoes: lista, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+      toast('✅ Manutenção marcada como resolvida');
+    } catch(e){ console.error(e); toast('Erro ao salvar status','err'); }
+  }
+}
+window.marcarManutencaoResolvida = marcarManutencaoResolvida;
+
+function mntTextoGrupo(){
+  const abertas = mntFiltradas().filter(m => (m.status||'aberta')!=='resolvida')
+    .sort((a,b)=>(MNT_URG_ORDEM[a.urgencia]??1)-(MNT_URG_ORDEM[b.urgencia]??1));
+  if(!abertas.length) return '';
+  let t = '🔧 *MANUTENÇÕES PENDENTES — JP EMBALAGENS*\n\n';
+  abertas.forEach((m,i)=>{
+    t += `${i+1}. ${m.urgenciaLabel||''} *${m.maquina||'—'}*\n`;
+    t += `   ${m.tipoLabel||''} — ${m.descricao||''}\n`;
+    t += `   👤 ${m.operadorNome||'—'} · ${m.data||''}\n\n`;
+  });
+  return t.trim();
+}
+
+function mntPostarGrupo(){
+  const texto = mntTextoGrupo();
+  if(!texto){ toast('Não há manutenções pendentes','err'); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texto).then(()=>toast('✓ Lista COPIADA! Cole no grupo do WhatsApp')).catch(()=>alert(texto));
+  } else { alert(texto); }
+  setTimeout(()=>{
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if(isMobile) window.location.href = 'whatsapp://send';
+    else window.open('https://web.whatsapp.com/', '_blank');
+  }, 400);
+}
+
+function mntExportCsv(){
+  const lista = mntFiltradas();
+  if(!lista.length){ toast('Nada para exportar','err'); return; }
+  const linhas = [['Data','Hora','Operador','Maquina','Tipo','Urgencia','Descricao','Status','Fotos']];
+  lista.forEach(m=>linhas.push([
+    m.data||'', m.hora||'', m.operadorNome||'', m.maquina||'',
+    (m.tipoLabel||'').replace(/[^\w\s\/À-ÿ]/g,'').trim(),
+    m.urgencia||'', (m.descricao||'').replace(/"/g,"'"), m.status||'aberta', m.qtdFotos||0
+  ]));
+  const csv = linhas.map(l=>l.map(c=>`"${c}"`).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'manutencoes_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+function initManutencoesModule(){
+  carregarManutencoes();
+  const q = document.getElementById('mnt-q'); if(q) q.oninput = e=>{ MNT_FILTROS.q=e.target.value; renderManutencoes(); };
+  const fm = document.getElementById('mnt-f-maquina'); if(fm) fm.onchange = e=>{ MNT_FILTROS.maquina=e.target.value; renderManutencoes(); };
+  const fu = document.getElementById('mnt-f-urg'); if(fu) fu.onchange = e=>{ MNT_FILTROS.urg=e.target.value; renderManutencoes(); };
+  const fs = document.getElementById('mnt-f-status'); if(fs) fs.onchange = e=>{ MNT_FILTROS.status=e.target.value; renderManutencoes(); };
+  const csv = document.getElementById('mnt-csv'); if(csv) csv.onclick = mntExportCsv;
+  const postar = document.getElementById('mnt-postar'); if(postar) postar.onclick = mntPostarGrupo;
+}
+
 function initOcorrenciasModule(){
   carregarOcorrencias();
   const q = document.getElementById('oc-q');
@@ -13139,6 +13338,7 @@ if(typeof initChapasModule === 'function') initChapasModule();
 if(typeof initCaminhoesModule === 'function') initCaminhoesModule();
 if(typeof initEscalasModule === 'function') initEscalasModule();
 if(typeof initOcorrenciasModule === 'function') initOcorrenciasModule();
+if(typeof initManutencoesModule === 'function') initManutencoesModule();
 setTimeout(()=>{
   sincronizarCaixasFirebase();
   if(typeof db !== 'undefined' && db){
