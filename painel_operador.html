@@ -23,6 +23,7 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" crossorigin="anonymous"></script>
 <style>
 :root{--bg-0:#0f172a;--bg-1:#1e293b;--bg-2:#243044;--bg-3:#2d3a52;--line:#334155;--line-soft:#1f2a3d;--text:#f1f5f9;--text-2:#cbd5e1;--text-3:#94a3b8;--text-4:#64748b;--amber:#009FE3;--amber-2:#33B5E8;--orange:#00668E;--red:#ef4444;--green:#10b981;--green-2:#22c55e;--blue:#3b82f6;--violet:#8b5cf6;--teal:#14b8a6;--stone:#a8a29e;--radius:14px;--radius-sm:10px}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -213,7 +214,7 @@ input[type=time],input[type=date],input[type=number]{color-scheme:dark;font-fami
 <div class="app-header">
   <div class="brand">
     <div class="brand-mark"><img src="data:image/png;base64,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" alt="JP Embalagens" style="width:100%;height:100%;object-fit:contain;display:block"></div>
-    <div class="brand-text"><h1>PAINEL OPERADOR</h1><p>JP EMBALAGENS · <span id="versao-badge-op" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;cursor:pointer;border:1px solid rgba(51,181,232,.3)" title="Ver versão">v2.1.0</span></p></div>
+    <div class="brand-text"><h1>PAINEL OPERADOR</h1><p>JP EMBALAGENS · <span id="versao-badge-op" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;cursor:pointer;border:1px solid rgba(51,181,232,.3)" title="Ver versão">v2.3.0</span></p></div>
   </div>
   <div class="user-tag" id="user-tag" style="display:none">
     <div class="av" id="user-av">?</div>
@@ -548,10 +549,10 @@ input[type=time],input[type=date],input[type=number]{color-scheme:dark;font-fami
     <button onclick="fecharPdf()" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;font-family:'Oswald';letter-spacing:.5px">✕ Fechar</button>
   </div>
 
-  <!-- Área do PDF (com touch-action pra pinch-zoom) -->
-  <div id="pdf-area" style="flex:1;overflow:auto;background:#1a1f2e;display:flex;align-items:center;justify-content:center;padding:8px;touch-action:pinch-zoom">
-    <canvas id="pdf-canvas" style="background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.5);max-width:100%;height:auto"></canvas>
-    <div id="pdf-loading" style="position:absolute;color:var(--text-2);font-size:14px;font-family:'Oswald';text-align:center">
+  <!-- Área do PDF (rola quando ampliado; centraliza quando cabe) -->
+  <div id="pdf-area" style="flex:1;overflow:auto;background:#1a1f2e;padding:8px;position:relative;touch-action:pan-x pan-y pinch-zoom">
+    <canvas id="pdf-canvas" style="background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.5);display:block;margin:0 auto"></canvas>
+    <div id="pdf-loading" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--text-2);font-size:14px;font-family:'Oswald';text-align:center">
       <div style="width:48px;height:48px;border-radius:50%;border:3px solid rgba(0,159,227,.2);border-top-color:#33B5E8;margin:0 auto 14px;animation:spinPdf 1s linear infinite"></div>
       Carregando PDF...
     </div>
@@ -575,6 +576,8 @@ input[type=time],input[type=date],input[type=number]{color-scheme:dark;font-fami
 <style>
 @keyframes spinPdf { to { transform: rotate(360deg); } }
 #modal-pdf.show { display: flex !important; }
+/* v2.3.0 — esconde o botão flutuante do chat enquanto o PDF está aberto (não cobre os controles) */
+body.pdf-aberto #chat-fab-wrap { display: none !important; }
 #modal-pdf #pdf-area::-webkit-scrollbar { width: 6px; height: 6px; }
 #modal-pdf #pdf-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 3px; }
 </style>
@@ -777,9 +780,9 @@ input[type=time],input[type=date],input[type=number]{color-scheme:dark;font-fami
     <div style="background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px">
       <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px">✏️ Corrigir quantidade produzida</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <input type="number" id="conc-qtd-edit" min="0" style="flex:1;background:var(--bg-1);border:1px solid var(--line);color:var(--text-1);padding:11px;border-radius:8px;font-size:16px;font-family:'JetBrains Mono'">
-        <span style="color:var(--text-3);font-size:13px">cx</span>
-        <button class="btn" id="btn-conc-salvar-qtd" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;font-weight:600;padding:11px 16px">Salvar</button>
+        <input type="number" id="conc-qtd-edit" min="0" style="flex:1;min-width:0;width:100%;background:var(--bg-1);border:1px solid var(--line);color:var(--text-1);padding:11px;border-radius:8px;font-size:16px;font-family:'JetBrains Mono'">
+        <span style="color:var(--text-3);font-size:13px;flex:0 0 auto">cx</span>
+        <button class="btn" id="btn-conc-salvar-qtd" style="width:auto;flex:0 0 auto;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;font-weight:600;padding:11px 16px">Salvar</button>
       </div>
       <div style="font-size:10px;color:var(--text-4);margin-top:6px">A média por hora é recalculada automaticamente.</div>
     </div>
@@ -847,6 +850,7 @@ const PK_PEDIDOS = 'jp_op_pedidos';
 const PK_PENDENTES = 'jp_op_pendentes';
 const PK_PROGRESSOS = 'jp_op_progressos';
 const PK_CONCLUIDOS = 'jp_op_concluidos'; // pedidoIds concluídos neste turno
+const PK_OCORRENCIAS = 'jp_op_ocorrencias'; // ocorrências registradas (local-first)
 
 let STATE = {
   operadores: [],
@@ -1816,6 +1820,7 @@ async function abrirPdf(url, nome, tamanho){
   document.getElementById('pdf-titulo').textContent = '📄 ' + (nome || 'Arte da caixa');
   document.getElementById('pdf-info').textContent = tamanho || '';
   document.getElementById('modal-pdf').classList.add('show');
+  document.body.classList.add('pdf-aberto');
   document.getElementById('pdf-loading').style.display = 'block';
   document.getElementById('pdf-canvas').style.display = 'none';
   // v1.9.6 — esconder imagem full se estava aberta antes
@@ -1841,31 +1846,31 @@ async function renderizarPaginaAtual(fit){
   const page = await PDF_STATE.doc.getPage(PDF_STATE.paginaAtual);
   const canvas = document.getElementById('pdf-canvas');
   const ctx = canvas.getContext('2d');
+  const vp1 = page.getViewport({scale: 1}); // tamanho base da página
   if(fit){
-    // Calcular escala FIT: encaixa página inteira na área disponível
+    // Escala FIT: encaixa a página inteira na área disponível
     const area = document.getElementById('pdf-area');
-    const padding = 16; // margem
-    const larguraDisponivel = area.clientWidth - padding;
-    const alturaDisponivel = area.clientHeight - padding;
-    const viewport1x = page.getViewport({scale: 1});
-    const escalaLarg = larguraDisponivel / viewport1x.width;
-    const escalaAlt = alturaDisponivel / viewport1x.height;
+    const padding = 16;
+    const escalaLarg = (area.clientWidth - padding) / vp1.width;
+    const escalaAlt = (area.clientHeight - padding) / vp1.height;
     PDF_STATE.escala = Math.min(escalaLarg, escalaAlt);
     PDF_STATE.escalaFit = PDF_STATE.escala;
   }
-  // v1.9.6 — Renderiza em QUALIDADE_RENDER vezes maior pra ficar nítido com pinch zoom
-  // Tela mostra no tamanho fit, mas o canvas físico tem 3x mais resolução
-  const QUALIDADE_RENDER = 3;
-  const escalaRender = PDF_STATE.escala * QUALIDADE_RENDER;
-  const viewport = page.getViewport({scale: escalaRender});
-  // Renderização em alta resolução (DPR + qualidade extra)
+  // v2.3.0 — Zoom REAL com qualidade: re-renderiza nítido no nível de zoom atual
+  // (PDF é vetorial → fica perfeito em qualquer ampliação, ideal pro impressor).
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = viewport.width * dpr;
-  canvas.height = viewport.height * dpr;
-  // CSS no tamanho fit (1x escala) — encaixa na tela mas com resolução sobrando
-  canvas.style.width = (viewport.width / QUALIDADE_RENDER) + 'px';
-  canvas.style.height = (viewport.height / QUALIDADE_RENDER) + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  let escalaRender = PDF_STATE.escala * dpr;
+  // Limite de segurança: o canvas não pode passar de ~12000px (limite do navegador)
+  const MAXPX = 12000;
+  const maiorLado = Math.max(vp1.width, vp1.height) * escalaRender;
+  if(maiorLado > MAXPX) escalaRender *= (MAXPX / maiorLado);
+  const viewport = page.getViewport({scale: escalaRender});
+  canvas.width = Math.round(viewport.width);
+  canvas.height = Math.round(viewport.height);
+  // CSS no tamanho do zoom atual (independente do dpr): aumenta de verdade na tela
+  canvas.style.width = Math.round(PDF_STATE.escala * vp1.width) + 'px';
+  canvas.style.height = Math.round(PDF_STATE.escala * vp1.height) + 'px';
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   await page.render({canvasContext: ctx, viewport}).promise;
 }
 
@@ -1912,6 +1917,7 @@ function atualizarBotoesPaginacao(){
 }
 function fecharPdf(){
   document.getElementById('modal-pdf').classList.remove('show');
+  document.body.classList.remove('pdf-aberto');
   // Limpar estado pra liberar memória
   PDF_STATE.doc = null;
   // v1.9.6 — esconder imagem full se estava aberta
@@ -3184,6 +3190,7 @@ document.getElementById('btn-oc-salvar').onclick = async () => {
   const desc = document.getElementById('oc-desc').value.trim();
 
   const btn = document.getElementById('btn-oc-salvar');
+  const btnLabel = OC_MODO_CONCLUIDO ? '⚠️ Registrar ocorrência' : '⚠️ Registrar e Pausar';
   btn.disabled = true;
   btn.textContent = '⏳ Salvando...';
 
@@ -3221,39 +3228,92 @@ document.getElementById('btn-oc-salvar').onclick = async () => {
     posConclusao: OC_MODO_CONCLUIDO || false
   };
 
+  // 1) SALVA LOCAL PRIMEIRO — nunca perde o registro, mesmo offline
   try {
-    // Salva no Firebase
+    const locais = load(PK_OCORRENCIAS, []);
+    locais.push(oc);
+    save(PK_OCORRENCIAS, locais);
+  } catch(e){
+    console.error('Falha ao salvar ocorrência local:', e);
+  }
+
+  // 2) SINCRONIZA COM A NUVEM (não bloqueia o sucesso — o local já foi salvo)
+  //    v2.2.0: as FOTOS agora vão pro Firebase Storage (arquivo, sem limite de
+  //    1MB) e no Firestore fica só o LINK. Assim o doc nunca estoura e o PCP
+  //    volta a mostrar as fotos (lê o link). Fluxo:
+  //      2a) sobe cada foto pro Storage → pega a URL de download
+  //      2b) grava doc próprio da ocorrência (jp_ocorrencias) com as URLs
+  //      2c) grava o doc legado do PCP (jp_sistema/ocorrencias) também com URLs
+  let okNuvem = true;
+  let fotosUrls = [];
+  let fotosOk = true;
+  try {
+    // 2a) Upload das fotos pro Storage
+    if(typeof storage !== 'undefined' && storage && OC_FOTOS.length){
+      for(let i = 0; i < OC_FOTOS.length; i++){
+        try {
+          const ref = storage.ref(`ocorrencias/${oc.id}/foto_${i}.jpg`);
+          await ref.putString(OC_FOTOS[i], 'data_url'); // OC_FOTOS são dataURLs base64
+          fotosUrls.push(await ref.getDownloadURL());
+        } catch(eUp){
+          fotosOk = false;
+          console.error(`Falha ao subir foto ${i} no Storage:`, eUp);
+        }
+      }
+    }
+
     if(typeof db !== 'undefined' && db){
-      // Lê a lista atual e adiciona (não sobrescreve)
+      // Versão da ocorrência pra nuvem: fotos viram LINKS (sem base64 pesado)
+      const ocCloud = { ...oc, fotos: fotosUrls, fotosUrls: fotosUrls };
+
+      // 2b) Documento próprio por ocorrência
+      await db.collection('jp_ocorrencias').doc(oc.id).set({
+        ...ocCloud,
+        atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // 2c) Doc legado do PCP — agora com as URLs (são leves, não estouram)
       const docRef = db.collection('jp_sistema').doc('ocorrencias');
       const docSnap = await docRef.get();
-      const lista = docSnap.exists ? (docSnap.data().ocorrencias || []) : [];
-      lista.push(oc);
+      let lista = docSnap.exists ? (docSnap.data().ocorrencias || []) : [];
+      // limpa qualquer base64 antigo preso no doc legado (compacta de vez)
+      lista = lista.map(o => {
+        const c = { ...o };
+        if(Array.isArray(c.fotos)) c.fotos = c.fotos.filter(f => typeof f === 'string' && !f.startsWith('data:'));
+        return c;
+      });
+      lista.push(ocCloud); // ocCloud não tem serverTimestamp (proibido dentro de array)
       await docRef.set({
         ocorrencias: lista,
         atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
       });
-    }
-
-    if(OC_MODO_CONCLUIDO){
-      // Pedido já finalizado: não pausa nada, só registra
-      fecharModalOcorrencia();
-      toast('⚠️ Ocorrência registrada','success');
-      renderListaPedidos();
     } else {
-      // Pausa o pedido automaticamente
-      pararTimer();
-      fecharModalOcorrencia();
-      toast('⚠️ Ocorrência registrada · pedido pausado','success');
-      trocarTela('pedidos');
-      renderListaPedidos();
+      okNuvem = false; // sem Firebase nesta sessão
     }
+    if(!fotosOk) okNuvem = false; // alguma foto não subiu
   } catch(err){
-    console.error('Erro ao salvar ocorrência:', err);
-    toast('Erro ao salvar: ' + err.message, 'err');
-    btn.disabled = false;
-    btn.textContent = OC_MODO_CONCLUIDO ? '⚠️ Registrar ocorrência' : '⚠️ Registrar e Pausar';
+    okNuvem = false;
+    console.error('Erro ao sincronizar ocorrência com a nuvem:', err);
   }
+
+  // 3) FECHA + FEEDBACK + FLUXO (registro local já garantido)
+  fecharModalOcorrencia();
+  if(OC_MODO_CONCLUIDO){
+    // Pedido já finalizado: não pausa nada, só registra
+    toast(okNuvem ? '⚠️ Ocorrência registrada' : '⚠️ Ocorrência salva no aparelho · sincroniza depois',
+          okNuvem ? 'success' : 'ok');
+    renderListaPedidos();
+  } else {
+    // Pausa o pedido automaticamente
+    pararTimer();
+    toast(okNuvem ? '⚠️ Ocorrência registrada · pedido pausado' : '⚠️ Salva no aparelho · pedido pausado',
+          okNuvem ? 'success' : 'ok');
+    trocarTela('pedidos');
+    renderListaPedidos();
+  }
+  // Botão sempre volta ao normal (nunca trava)
+  btn.disabled = false;
+  btn.textContent = btnLabel;
 };
 
 // Fechar modal clicando fora
@@ -3765,12 +3825,14 @@ const FB_CONFIG = {
 };
 
 let db = null;
+let storage = null;
 let fbUnsubPedidos = null;
 
 function initFirebase(){
   try {
     firebase.initializeApp(FB_CONFIG);
     db = firebase.firestore();
+    try { storage = firebase.storage(); } catch(e){ storage = null; console.warn('Storage indisponível:', e.message); }
     document.getElementById('fb-status').innerHTML =
       '<span style="color:#6ee7b7">● Firebase conectado — pedidos serão carregados automaticamente</span>';
     // Se já tem sessão ativa, buscar pedidos automaticamente
