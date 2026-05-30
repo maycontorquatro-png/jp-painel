@@ -640,7 +640,7 @@ body {
   <div class="app-header">
     <div class="app-titulo">
       🚛 JP ESCALA
-      <span class="badge">v2.4.2</span>
+      <span class="badge">v2.5.0</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span class="user-info" id="user-info"></span>
@@ -1175,7 +1175,16 @@ function render(){
     }];
     const destHtml = destinos.map((d, i) => {
       const nome = d.clienteNome || d.destinoLivre || '—';
-      const enderecoNav = (d.endereco || '').trim();
+      // v2.4.3 — se a viagem não tem endereço salvo, busca o atual do cadastro do cliente
+      let enderecoNav = (d.endereco || '').trim();
+      if(!enderecoNav && (d.clienteId || d.clienteNome)){
+        const norm = s => (s||'').trim().toLowerCase();
+        const cli = (STATE.clientes||[]).find(c =>
+          (d.clienteId && c.id === d.clienteId) ||
+          (d.clienteNome && norm(c.nome) === norm(d.clienteNome))
+        );
+        if(cli) enderecoNav = enderecoCompletoCliente(cli).trim();
+      }
       const refTxt = d.referencia ? ` <span style="color:var(--text-4)">· 🧭 ${escapeHtml(d.referencia)}</span>` : '';
       return `<div class="vg-dest">
         ${destinos.length > 1 ? `<span style="color:var(--blue-2);font-weight:700">${i+1}.</span> ` : '📍 '}

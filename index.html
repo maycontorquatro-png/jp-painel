@@ -140,6 +140,10 @@ body {
 .card.escala { border-color: rgba(59,130,246,.3); }
 .card.escala::before { background: linear-gradient(90deg, #00668E, #009FE3); }
 .card.escala:hover { border-color: #009FE3; }
+.card.motorista { border-color: rgba(99,102,241,.3); }
+.card.motorista::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+.card.motorista:hover { border-color: #818cf8; }
+.card.motorista .icon { background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); }
 
 .icon {
   width: 52px;
@@ -310,19 +314,26 @@ body {
       <div class="icon">🔬</div>
       <div class="card-titulo">Laudo</div>
       <div class="card-sub">Qualidade e testes</div>
-      <div class="card-tag">Gramatura · Mullen</div>
+      <div class="card-tag">Gramatura</div>
     </a>
 
     <a href="painel_escala.html" class="card escala" onclick="lembrarEscolha('escala')" style="grid-column:1/-1">
       <div class="icon">🚛📋</div>
       <div class="card-titulo">Escala (PCP)</div>
       <div class="card-sub">Cadastrar viagens, caminhões, motoristas</div>
-      <div class="card-tag">Para o Tuliza · Login: admin/pcp</div>
+      <div class="card-tag">Login: admin/pcp</div>
+    </a>
+
+    <a href="painel_motorista.html" class="card motorista" onclick="lembrarEscolha('motorista')" style="grid-column:1/-1">
+      <div class="icon">🚚</div>
+      <div class="card-titulo">App do Motorista</div>
+      <div class="card-sub">Viagens do dia, rota GPS, aviso de carga e status de entrega</div>
+      <div class="card-tag">Para o motorista · Login: nome + PIN</div>
     </a>
   </div>
 
   <div class="footer">
-    <span class="versao">v2.4.2</span> ·
+    <span class="versao">v2.5.0</span> ·
     <span class="status"><span class="dot"></span>Servidor online</span>
   </div>
 </div>
@@ -334,7 +345,8 @@ const PAINEIS = {
   sistema: { arquivo: 'sistema.html', nome: 'PCP / Sistema', icone: '📊' },
   expedicao: { arquivo: 'painel_expedicao.html', nome: 'Expedição', icone: '🚛' },
   laudo: { arquivo: 'painel_laudo.html', nome: 'Laudo', icone: '🔬' },
-  escala: { arquivo: 'painel_escala.html', nome: 'Escala', icone: '🚛📋' }
+  escala: { arquivo: 'painel_escala.html', nome: 'Escala', icone: '🚛📋' },
+  motorista: { arquivo: 'painel_motorista.html', nome: 'Motorista', icone: '🚚' }
 };
 
 let redirectTimer = null;

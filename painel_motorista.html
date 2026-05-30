@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#009FE3">
+<meta name="mobile-web-app-capable" content="yes">
+<title>JP · App do Motorista</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#0a0e1a; --bg-1:#111726; --bg-2:#1a2336; --bg-3:#222d44;
+  --line:#2a3550; --text-1:#eef2f9; --text-2:#c2cce0; --text-3:#8d9bb8; --text-4:#5e6c88;
+  --blue:#009FE3; --blue-2:#33B5E8; --green:#10b981; --green-2:#6ee7b7;
+  --amber:#f59e0b; --amber-2:#fbbf24; --red:#ef4444; --red-2:#fca5a5;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg-0);color:var(--text-1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overscroll-behavior:none}
+.screen{display:none;min-height:100vh;min-height:100dvh}
+.screen.active{display:block}
+h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.btn{border:none;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:700;cursor:pointer;color:#fff;background:var(--bg-2);transition:transform .1s}
+.btn:active{transform:scale(.96)}
+.btn-blue{background:linear-gradient(135deg,#009FE3,#33B5E8);color:#fff}
+.btn-green{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.btn-ghost{background:var(--bg-2);color:var(--text-2);border:1px solid var(--line)}
+
+/* LOGIN */
+#screen-login{padding:0}
+.login-top{background:linear-gradient(135deg,#00668E,#009FE3);padding:48px 20px 26px;padding-top:max(48px,env(safe-area-inset-top));text-align:center}
+.login-top .ico{font-size:46px}
+.login-top h1{font-size:26px;color:#fff;margin-top:6px;letter-spacing:.5px}
+.login-top p{color:rgba(255,255,255,.85);font-size:13px;margin:4px 0 0}
+.login-body{padding:18px}
+.mot-item{display:flex;align-items:center;gap:12px;background:var(--bg-1);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer}
+.mot-item:active{background:var(--bg-2)}
+.mot-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#009FE3,#33B5E8);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.mot-item .nm{font-weight:700;font-size:16px}
+.mot-item .sb{font-size:12px;color:var(--text-4)}
+/* PIN */
+#pin-step{display:none;padding:18px;text-align:center}
+.pin-dots{display:flex;gap:14px;justify-content:center;margin:18px 0 24px}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--blue-2);background:transparent}
+.pin-dot.on{background:var(--blue-2)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:300px;margin:0 auto}
+.numpad button{aspect-ratio:1;border-radius:50%;border:1px solid var(--line);background:var(--bg-1);color:var(--text-1);font-size:24px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono'}
+.numpad button:active{background:var(--bg-2)}
+
+/* APP */
+.app-head{background:linear-gradient(135deg,#00668E,#009FE3);padding:16px 16px 14px;padding-top:max(16px,env(safe-area-inset-top));display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.app-head .av{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:20px}
+.app-head .nm{font-weight:700;font-size:17px;color:#fff;line-height:1.1}
+.app-head .sb{font-size:11px;color:rgba(255,255,255,.8)}
+.app-head .sair{margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.wrap{padding:14px;max-width:560px;margin:0 auto;padding-bottom:40px}
+.aviso-bar{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--amber-2);display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer}
+.aviso-bar.ok{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.4);color:var(--green-2)}
+.viagem{background:var(--bg-1);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px}
+.vg-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.vg-cam{font-family:'Oswald';font-size:18px;font-weight:700}
+.vg-cam small{font-family:inherit;font-weight:400;color:var(--text-4);font-size:12px}
+.status-pill{font-size:12px;font-weight:700;padding:5px 10px;border-radius:20px;white-space:nowrap}
+.dest{background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px}
+.dest .dn{font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px}
+.dest .de{font-size:12px;color:var(--text-3);margin-top:3px}
+.dest .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:8px;padding:7px 10px;text-decoration:none;font-weight:700;border:1px solid var(--line)}
+.chip-tel{background:rgba(16,185,129,.14);color:var(--green-2);border-color:rgba(16,185,129,.35)}
+.chip-rota{background:rgba(0,159,227,.14);color:var(--blue-2);border-color:rgba(0,159,227,.35)}
+.chip-hora{background:var(--bg-3);color:var(--text-2)}
+.dest-acoes{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.dest-acoes .btn{font-size:13px;padding:11px 6px}
+.estado-atual{font-size:12px;font-weight:700;margin-top:9px;padding:7px 10px;border-radius:8px;text-align:center}
+.empty{text-align:center;color:var(--text-3);padding:50px 20px}
+.empty .i{font-size:48px}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:none;align-items:flex-end;justify-content:center}
+.modal.ativo{display:flex}
+.modal-card{background:var(--bg-1);width:100%;max-width:460px;border-radius:18px 18px 0 0;padding:18px;padding-bottom:max(18px,env(safe-area-inset-bottom))}
+.modal-card h3{font-size:18px;margin-bottom:4px}
+.modal-handle{width:40px;height:4px;background:var(--bg-3);border-radius:2px;margin:0 auto 14px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#fff;color:#0a0e1a;padding:11px 18px;border-radius:24px;font-weight:700;font-size:13px;z-index:99999;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:90%;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+#toast.err{background:#fca5a5}
+#toast.ok{background:#6ee7b7}
+.badge{font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div class="screen active" id="screen-login">
+  <div class="login-top">
+    <div class="ico">🚚</div>
+    <h1>APP DO MOTORISTA</h1>
+    <p>JP Embalagens · <span class="badge">v2.5.0</span></p>
+  </div>
+  <div class="login-body" id="login-lista-step">
+    <div style="font-size:12px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">Quem é você?</div>
+    <div id="lista-motoristas"></div>
+    <div id="login-status" style="text-align:center;color:var(--text-4);font-size:13px;margin-top:14px">⏳ Carregando motoristas...</div>
+  </div>
+  <div id="pin-step">
+    <div class="mot-av" style="margin:0 auto 10px;width:54px;height:54px;font-size:26px" id="pin-av">🚚</div>
+    <h2 id="pin-nome" style="font-size:20px">—</h2>
+    <p style="color:var(--text-3);font-size:13px;margin:6px 0 0">Digite seu PIN de 4 dígitos</p>
+    <div class="pin-dots" id="pin-dots"></div>
+    <div class="numpad" id="numpad"></div>
+    <button class="btn btn-ghost" style="margin-top:18px;width:100%;max-width:300px" id="pin-voltar">← Voltar</button>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="screen" id="screen-app">
+  <div class="app-head">
+    <div class="av">🚚</div>
+    <div>
+      <div class="nm" id="app-nome">Motorista</div>
+      <div class="sb" id="app-sub">—</div>
+    </div>
+    <button class="sair" id="btn-sair">Sair</button>
+  </div>
+  <div class="wrap">
+    <div class="aviso-bar" id="aviso-bar">🔔 Toque aqui para ativar os avisos de carga (som + vibração)</div>
+    <div id="viagens-lista"></div>
+  </div>
+</div>
+
+<!-- MODAL ROTA -->
+<div class="modal" id="modal-rota">
+  <div class="modal-card">
+    <div class="modal-handle"></div>
+    <h3>🧭 Abrir rota</h3>
+    <div style="font-size:12px;color:var(--text-3);margin-bottom:14px" id="rota-end">—</div>
+    <button class="btn" style="width:100%;background:#33ccff;color:#0a0e1a;margin-bottom:8px" id="rota-waze">Waze</button>
+    <button class="btn" style="width:100%;background:#4285F4;color:#fff;margin-bottom:8px" id="rota-gmaps">Google Maps</button>
+    <button class="btn btn-ghost" style="width:100%" id="rota-fechar">Cancelar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ===== Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyDIX4G0-vqbw8h_lZM0w8gTsJM7-tBFd70",
+  authDomain: "jpproducao-6b59f.firebaseapp.com",
+  projectId: "jpproducao-6b59f",
+  storageBucket: "jpproducao-6b59f.firebasestorage.app",
+  messagingSenderId: "319945051169",
+  appId: "1:319945051169:web:c951da8d6c34de351c2760"
+};
+let db = null;
+try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e){ console.error('Firebase:', e); }
+
+// ===== Helpers =====
+const $ = id => document.getElementById(id);
+function toast(msg, tipo){ const t=$('toast'); t.textContent=msg; t.className='show'+(tipo?(' '+tipo):''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='',2600); }
+function nowTime(){ const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function ymd(d){ d=new Date(d); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function hojeStr(){ return ymd(new Date()); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const norm = s => (s||'').toString().toLowerCase().trim().replace(/\s+/g,' ');
+
+// ===== Estado =====
+let MOTORISTAS = [], CLIENTES = [], VIAGENS = [], CARGAS = [], ENTREGAS = {};
+let SESSAO = null;
+let LOGIN_SEL = null;
+let PIN_BUF = '';
+let AVISOS_ATIVOS = false;
+let AUDIO_CTX = null;
+let STATUS_ANT = {};
+try { STATUS_ANT = JSON.parse(localStorage.getItem('jp_mot_status_ant')||'{}'); } catch(e){}
+const PK_SESSAO = 'jp_mot_sessao';
+
+// ===== Carregar motoristas pra login =====
+function carregarMotoristasLogin(){
+  if(!db){ $('login-status').textContent='Sem conexão.'; return; }
+  db.collection('jp_sistema').doc('motoristas').onSnapshot(doc=>{
+    MOTORISTAS = (doc.exists && doc.data().motoristas) ? doc.data().motoristas : [];
+    renderListaMotoristas();
+  }, ()=>{ $('login-status').textContent='Erro ao carregar. Tente recarregar.'; });
+}
+function renderListaMotoristas(){
+  const cont = $('lista-motoristas');
+  $('login-status').style.display = MOTORISTAS.length ? 'none' : 'block';
+  if(!MOTORISTAS.length){ $('login-status').textContent='Nenhum motorista cadastrado. Peça ao PCP.'; return; }
+  cont.innerHTML = MOTORISTAS.slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(m=>`
+    <div class="mot-item" onclick="selecionarMotorista('${m.id}')">
+      <div class="mot-av">🚚</div>
+      <div><div class="nm">${esc(m.nome)}</div><div class="sb">${esc(m.placa||m.empresa||'')}</div></div>
+    </div>`).join('');
+}
+
+// ===== Login PIN =====
+window.selecionarMotorista = function(id){
+  const m = MOTORISTAS.find(x=>x.id===id);
+  if(!m) return;
+  if(!m.pin){ toast('Seu PIN ainda não foi cadastrado. Peça ao PCP.','err'); return; }
+  LOGIN_SEL = m;
+  PIN_BUF = '';
+  $('pin-nome').textContent = m.nome;
+  $('login-lista-step').style.display='none';
+  $('pin-step').style.display='block';
+  renderPinDots();
+};
+function renderPinDots(){
+  $('pin-dots').innerHTML = [0,1,2,3].map(i=>`<div class="pin-dot ${i<PIN_BUF.length?'on':''}"></div>`).join('');
+}
+function montarNumpad(){
+  const teclas = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  $('numpad').innerHTML = teclas.map(t=> t==='' ? '<div></div>' : `<button onclick="digitarPin('${t}')">${t}</button>`).join('');
+}
+window.digitarPin = function(t){
+  if(t==='⌫'){ PIN_BUF = PIN_BUF.slice(0,-1); renderPinDots(); return; }
+  if(PIN_BUF.length>=4) return;
+  PIN_BUF += t;
+  renderPinDots();
+  if(PIN_BUF.length===4) setTimeout(validarPin, 150);
+};
+function validarPin(){
+  if(!LOGIN_SEL) return;
+  if(PIN_BUF === String(LOGIN_SEL.pin)){
+    SESSAO = { id: LOGIN_SEL.id, nome: LOGIN_SEL.nome, placa: LOGIN_SEL.placa||'', whatsapp: LOGIN_SEL.whatsapp||'' };
+    localStorage.setItem(PK_SESSAO, JSON.stringify(SESSAO));
+    entrarApp();
+  } else {
+    PIN_BUF=''; renderPinDots();
+    if(navigator.vibrate) navigator.vibrate([60,40,60]);
+    toast('PIN incorreto','err');
+  }
+}
+$('pin-voltar').onclick = ()=>{ $('pin-step').style.display='none'; $('login-lista-step').style.display='block'; };
+
+// ===== App =====
+function entrarApp(){
+  $('app-nome').textContent = SESSAO.nome;
+  $('app-sub').textContent = SESSAO.placa ? ('Placa '+SESSAO.placa) : 'Motorista';
+  $('screen-login').classList.remove('active');
+  $('screen-app').classList.add('active');
+  iniciarDados();
+}
+$('btn-sair').onclick = ()=>{
+  localStorage.removeItem(PK_SESSAO);
+  SESSAO=null;
+  $('screen-app').classList.remove('active');
+  $('screen-login').classList.add('active');
+  $('pin-step').style.display='none';
+  $('login-lista-step').style.display='block';
+};
+
+function iniciarDados(){
+  if(!db) return;
+  // clientes (uma vez + listener)
+  db.collection('jp_sistema').doc('clientes').onSnapshot(d=>{ CLIENTES = (d.exists&&d.data().clientes)?d.data().clientes:[]; render(); });
+  // entregas status (live, bidirecional)
+  db.collection('jp_sistema').doc('entregas_status').onSnapshot(d=>{ ENTREGAS = (d.exists&&d.data().entregas)?d.data().entregas:{}; render(); });
+  // cargas (dispara avisos)
+  db.collection('jp_sistema').doc('cargas').onSnapshot(d=>{ CARGAS = (d.exists&&d.data().cargas)?d.data().cargas:[]; processarAvisos(); render(); });
+  // escalas (viagens)
+  db.collection('jp_sistema').doc('escalas').onSnapshot(d=>{ VIAGENS = (d.exists&&d.data().escalas)?d.data().escalas:[]; processarAvisos(); render(); });
+}
+
+function minhasViagensHoje(){
+  const hoje = hojeStr();
+  return VIAGENS.filter(v => v && v.motoristaId===SESSAO.id && v.data===hoje && v.status!=='cancelado');
+}
+
+// ===== Status de carga (espelha a lógica da escala) =====
+function statusCarga(v){
+  if(!v) return 'aguardando';
+  const destinos = (Array.isArray(v.destinos)&&v.destinos.length)?v.destinos:[{clienteNome:v.clienteNome,destinoLivre:v.destinoLivre}];
+  const clientesEsc = destinos.map(d=>norm(d.clienteNome||d.destinoLivre)).filter(Boolean);
+  if(!clientesEsc.length) return 'aguardando';
+  const placaNorm = norm(v.caminhaoPlaca);
+  const cargasV = CARGAS.filter(c=>{
+    if(!c || norm(c.placa)!==placaNorm) return false;
+    const dt = c.iniciadoEm?new Date(c.iniciadoEm):(c.finalizadoEm?new Date(c.finalizadoEm):null);
+    if(!dt) return false;
+    return ymd(dt)===v.data;
+  });
+  if(!cargasV.length) return 'aguardando';
+  const cargadosSet=new Set();
+  cargasV.forEach(c=>(c.paletes||[]).forEach(p=>{ if(p.cliente) cargadosSet.add(norm(p.cliente)); }));
+  const cargados=Array.from(cargadosSet);
+  const finalizada = cargasV.some(c=>c.status==='finalizada'||c.finalizadoEm);
+  const todos = clientesEsc.every(cli=>cargados.some(cc=>cc.includes(cli)||cli.includes(cc)));
+  if(finalizada) return 'finalizada';
+  if(todos) return 'carregado';
+  if(cargados.length>0) return 'parcial';
+  return 'aguardando';
+}
+const STATUS_INFO = {
+  aguardando:{lbl:'⏳ Aguardando carga',cor:'#fbbf24',bg:'rgba(245,158,11,.2)'},
+  parcial:{lbl:'📦 Carregando...',cor:'#33B5E8',bg:'rgba(0,159,227,.2)'},
+  carregado:{lbl:'✅ Carregado',cor:'#6ee7b7',bg:'rgba(16,185,129,.2)'},
+  finalizada:{lbl:'🚚 Pronto pra sair',cor:'#6ee7b7',bg:'rgba(16,185,129,.25)'}
+};
+
+// ===== Avisos sonoros =====
+$('aviso-bar').onclick = ativarAvisos;
+function ativarAvisos(){
+  try { AUDIO_CTX = AUDIO_CTX || new (window.AudioContext||window.webkitAudioContext)(); if(AUDIO_CTX.state==='suspended') AUDIO_CTX.resume(); } catch(e){}
+  if('Notification' in window && Notification.permission==='default'){ try{ Notification.requestPermission(); }catch(e){} }
+  AVISOS_ATIVOS = true;
+  const bar = $('aviso-bar');
+  bar.classList.add('ok');
+  bar.innerHTML = '🔔 Avisos ativados — você será avisado quando a carga começar e terminar';
+  beep('teste');
+  if(navigator.vibrate) navigator.vibrate(40);
+}
+function beep(tipo){
+  if(!AUDIO_CTX) return;
+  const seq = tipo==='finalizada' ? [[660,0],[880,.15],[1046,.3]] : tipo==='iniciada' ? [[523,0],[784,.18]] : [[880,0]];
+  seq.forEach(([f,t])=>{
+    const o=AUDIO_CTX.createOscillator(), g=AUDIO_CTX.createGain();
+    o.connect(g); g.connect(AUDIO_CTX.destination);
+    o.type='sine'; o.frequency.value=f;
+    const start=AUDIO_CTX.currentTime+t;
+    g.gain.setValueAtTime(.0001,start);
+    g.gain.exponentialRampToValueAtTime(.25,start+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,start+.32);
+    o.start(start); o.stop(start+.34);
+  });
+}
+function notificar(titulo, corpo){
+  try { if('Notification' in window && Notification.permission==='granted') new Notification(titulo,{body:corpo}); } catch(e){}
+}
+function avisar(tipo, v){
+  const cam = v.caminhaoPlaca||SESSAO.placa||'seu caminhão';
+  if(tipo==='iniciada'){ beep('iniciada'); if(navigator.vibrate) navigator.vibrate([120,60,120]); toast('🔊 Carga INICIADA — '+cam); notificar('🚚 Carga iniciada', 'Começaram a carregar '+cam); }
+  else { beep('finalizada'); if(navigator.vibrate) navigator.vibrate([200,80,200,80,200]); toast('✅ Carga FINALIZADA — '+cam); notificar('✅ Carga finalizada', cam+' pronto pra sair'); }
+}
+function processarAvisos(){
+  if(!SESSAO) return;
+  minhasViagensHoje().forEach(v=>{
+    const st = statusCarga(v);
+    const ant = STATUS_ANT[v.id];
+    if(st !== ant){
+      if(AVISOS_ATIVOS && ant!==undefined){
+        if((st==='parcial'||st==='carregado') && ant==='aguardando') avisar('iniciada', v);
+        else if((st==='finalizada') && ant!=='finalizada') avisar('finalizada', v);
+      }
+      STATUS_ANT[v.id]=st;
+      localStorage.setItem('jp_mot_status_ant', JSON.stringify(STATUS_ANT));
+    }
+  });
+}
+
+// ===== Cliente: telefone / horário / endereço =====
+function clienteDoDestino(d){
+  if(!d) return null;
+  return CLIENTES.find(c => (d.clienteId && c.id===d.clienteId) || (d.clienteNome && norm(c.nome)===norm(d.clienteNome))) || null;
+}
+function enderecoCompleto(c, d){
+  if(d && d.endereco) return d.endereco;
+  if(!c) return '';
+  const l1 = c.endereco || [[c.rua,c.numero].filter(Boolean).join(', '), c.bairro].filter(Boolean).join(' - ');
+  const cid = [c.cidade,c.uf].filter(Boolean).join('/');
+  return [l1,cid].filter(Boolean).join(' · ');
+}
+
+// ===== Render =====
+const ESTADO_INFO = {
+  caminho:{lbl:'🚗 A caminho',cor:'var(--text-3)',bg:'var(--bg-3)'},
+  cheguei:{lbl:'📍 Cheguei no destino',cor:'#fbbf24',bg:'rgba(245,158,11,.18)'},
+  entregue:{lbl:'✅ Entregue',cor:'#6ee7b7',bg:'rgba(16,185,129,.18)'}
+};
+function render(){
+  if(!SESSAO) return;
+  const lista = minhasViagensHoje().sort((a,b)=>(a.horaSaida||'').localeCompare(b.horaSaida||''));
+  const cont = $('viagens-lista');
+  if(!lista.length){
+    cont.innerHTML = `<div class="empty"><div class="i">📭</div><div style="margin-top:10px">Nenhuma viagem programada pra você hoje.</div></div>`;
+    return;
+  }
+  cont.innerHTML = lista.map(v=>{
+    const st = statusCarga(v);
+    const si = STATUS_INFO[st]||STATUS_INFO.aguardando;
+    const ent = ENTREGAS[v.id] || {};
+    const destinos = (Array.isArray(v.destinos)&&v.destinos.length)?v.destinos:[{clienteNome:v.clienteNome,endereco:v.endereco}];
+    const destHtml = destinos.map((d,i)=>{
+      const c = clienteDoDestino(d);
+      const nome = d.clienteNome || d.destinoLivre || (c&&c.nome) || '—';
+      const end = enderecoCompleto(c,d);
+      const tel = (c && (c.telefone||c.whatsapp)) || '';
+      const telNum = tel.replace(/\D/g,'');
+      const horario = (c && c.horario) || '';
+      const ref = d.referencia || (c&&c.referencia) || '';
+      const estadoDest = (ent.destinos && ent.destinos[i] && ent.destinos[i].estado) || 'caminho';
+      const ei = ESTADO_INFO[estadoDest]||ESTADO_INFO.caminho;
+      const horaEstado = (ent.destinos && ent.destinos[i] && ent.destinos[i].hora) || '';
+      return `<div class="dest">
+        <div class="dn">${destinos.length>1?`<span style="color:var(--blue-2)">${i+1}.</span>`:'📍'} ${esc(nome)}</div>
+        ${end?`<div class="de">${esc(end)}${ref?` · 🧭 ${esc(ref)}`:''}</div>`:(ref?`<div class="de">🧭 ${esc(ref)}</div>`:'')}
+        <div class="meta">
+          ${end?`<span class="chip chip-rota" onclick="abrirRota(${JSON.stringify(end).replace(/"/g,'&quot;')})">🧭 Rota</span>`:''}
+          ${telNum?`<a class="chip chip-tel" href="tel:${telNum}">📞 Ligar</a>`:''}
+          ${horario?`<span class="chip chip-hora">🕐 ${esc(horario)}</span>`:''}
+        </div>
+        <div class="estado-atual" style="color:${ei.cor};background:${ei.bg}">${ei.lbl}${horaEstado?` · ${horaEstado}`:''}</div>
+        <div class="dest-acoes">
+          <button class="btn ${estadoDest==='cheguei'?'btn-blue':'btn-ghost'}" onclick="marcarDestino('${v.id}',${i},'cheguei')">📍 Cheguei</button>
+          <button class="btn ${estadoDest==='entregue'?'btn-green':'btn-ghost'}" onclick="marcarDestino('${v.id}',${i},'entregue')">✅ Entreguei</button>
+        </div>
+      </div>`;
+    }).join('');
+    const geral = ent.geral || '';
+    return `<div class="viagem">
+      <div class="vg-top">
+        <div class="vg-cam">🚛 ${esc(v.caminhaoPlaca||'—')} <small>${esc(v.caminhaoApelido||'')}</small></div>
+        <span class="status-pill" style="color:${si.cor};background:${si.bg}">${si.lbl}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-4);margin-bottom:4px">
+        ${v.horaSaida?`🕐 Saída ${esc(v.horaSaida)}`:''} ${v.retorno?`· Retorno ${esc(v.retorno)}`:''}
+      </div>
+      ${destHtml}
+      <div class="dest-acoes" style="grid-template-columns:1fr;margin-top:12px">
+        <button class="btn ${geral==='voltando'?'btn-blue':'btn-ghost'}" onclick="marcarGeral('${v.id}','voltando')">🏭 ${geral==='voltando'?'Voltando pra fábrica ✓':'Voltando pra fábrica'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== Marcar status (escreve no doc que o PCP lê) =====
+async function gravarEntregas(){
+  if(!db) return false;
+  try {
+    const ref = db.collection('jp_sistema').doc('entregas_status');
+    const snap = await ref.get();
+    const all = snap.exists ? (snap.data().entregas||{}) : {};
+    Object.keys(ENTREGAS).forEach(k=> all[k]=ENTREGAS[k]);
+    await ref.set({ entregas: all, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
+    return true;
+  } catch(e){ console.error(e); return false; }
+}
+function baseEntrega(v){
+  return ENTREGAS[v] || (ENTREGAS[v]={ motoristaId:SESSAO.id, motoristaNome:SESSAO.nome, placa:SESSAO.placa, data:hojeStr(), destinos:{}, geral:'' });
+}
+window.marcarDestino = async function(viagemId, idx, estado){
+  const e = baseEntrega(viagemId);
+  // toggle: se já está nesse estado, volta pra 'a caminho'
+  const atual = e.destinos[idx] && e.destinos[idx].estado;
+  e.destinos[idx] = { estado: atual===estado ? 'caminho' : estado, hora: nowTime() };
+  e.motoristaNome = SESSAO.nome; e.atualizadoEm = new Date().toISOString();
+  render();
+  const ok = await gravarEntregas();
+  toast(ok ? (estado==='entregue'?'✅ Entrega registrada':'📍 Chegada registrada') : 'Salvo · sincroniza depois', ok?'ok':'');
+  if(navigator.vibrate) navigator.vibrate(30);
+};
+window.marcarGeral = async function(viagemId, estado){
+  const e = baseEntrega(viagemId);
+  e.geral = e.geral===estado ? '' : estado;
+  e.motoristaNome = SESSAO.nome; e.atualizadoEm = new Date().toISOString();
+  render();
+  const ok = await gravarEntregas();
+  toast(ok ? '🏭 Avisado: voltando pra fábrica' : 'Salvo · sincroniza depois', ok?'ok':'');
+};
+
+// ===== Rota (Waze / Google Maps) =====
+let ROTA_END='';
+window.abrirRota = function(end){
+  ROTA_END = (end||'').replace(/\s*·\s*/g,', ').trim();
+  $('rota-end').textContent = '📍 '+ROTA_END;
+  $('modal-rota').classList.add('ativo');
+};
+$('rota-fechar').onclick = ()=> $('modal-rota').classList.remove('ativo');
+$('modal-rota').onclick = e=>{ if(e.target.id==='modal-rota') $('modal-rota').classList.remove('ativo'); };
+$('rota-waze').onclick = ()=>{ window.open(`https://waze.com/ul?q=${encodeURIComponent(ROTA_END)}&navigate=yes`,'_blank'); $('modal-rota').classList.remove('ativo'); };
+$('rota-gmaps').onclick = ()=>{ window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ROTA_END)}`,'_blank'); $('modal-rota').classList.remove('ativo'); };
+
+// ===== Boot =====
+montarNumpad();
+carregarMotoristasLogin();
+// sessão salva
+try {
+  const s = JSON.parse(localStorage.getItem(PK_SESSAO)||'null');
+  if(s && s.id){ SESSAO = s; entrarApp(); }
+} catch(e){}
+</script>
+</body>
+</html>
