@@ -765,15 +765,29 @@ async function uploadFotoCaixa(cxid, file){
   const cx = ORC_CAIXAS.find(c=>c.id===cxid);
   if(!cx || !file) return;
   if(!storage){ toast('Storage indisponível, tente de novo','err'); return; }
+  const vid = (SESSAO && SESSAO.id) ? SESSAO.id : 'sem_id';
   toast('📤 Enviando foto...');
+  // 1) Compactar a imagem (pode falhar com HEIC do iPhone)
+  let dataUrl;
   try {
-    const dataUrl = await comprimirImagem(file);
-    const ref = storage.ref(`orcamentos_modelos/${SESSAO.id}/${Date.now()}_${cxid}.jpg`);
+    dataUrl = await comprimirImagem(file);
+  } catch(e){
+    console.error('comprimir foto:', e);
+    toast('Não consegui ler essa foto (formato?). Tente tirar de novo ou escolher outra.','err');
+    return;
+  }
+  // 2) Enviar pro Storage
+  try {
+    const ref = storage.ref(`orcamentos_modelos/${vid}/${Date.now()}_${cxid}.jpg`);
     await ref.putString(dataUrl, 'data_url');
     cx.fotoUrl = await ref.getDownloadURL();
     renderCaixasOrc();
     toast('✅ Foto do modelo enviada','ok');
-  } catch(e){ console.warn('upload foto:', e); toast('Erro ao enviar foto','err'); }
+  } catch(e){
+    console.error('upload foto:', e);
+    const motivo = e && (e.code || e.message) ? (e.code || e.message) : 'erro desconhecido';
+    toast('Erro ao enviar foto: ' + motivo, 'err');
+  }
 }
 window.removerCaixa = function(id){ ORC_CAIXAS = ORC_CAIXAS.filter(c=>c.id!==id); if(!ORC_CAIXAS.length) ORC_CAIXAS.push(novaCaixa()); renderCaixasOrc(); };
 $('orc-add-caixa').onclick = ()=>{ ORC_CAIXAS.push(novaCaixa()); renderCaixasOrc(); };
