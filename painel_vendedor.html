@@ -400,9 +400,8 @@ function carregarConhecidos(){
   if(!Array.isArray(CONHECIDOS)) CONHECIDOS = [];
 }
 function salvarConhecido(v){
-  carregarConhecidos();
-  CONHECIDOS = CONHECIDOS.filter(c => c.id !== v.id);
-  CONHECIDOS.unshift({ id: v.id, nome: v.nome });
+  // guarda SÓ o vendedor que entrou (1 por aparelho) — ninguém vê o nome dos outros
+  CONHECIDOS = [{ id: v.id, nome: v.nome }];
   localStorage.setItem(PK_CONHECIDOS, JSON.stringify(CONHECIDOS));
 }
 function mostrarEtapaLogin(){
