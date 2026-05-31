@@ -112,6 +112,7 @@ input, textarea, select { font-family: inherit; }
 .pedido-topo { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .pedido-codigo { font-family: 'Oswald'; font-size: 16px; font-weight: 700; color: var(--text-1); letter-spacing: 1px; }
 .pedido-cliente { font-size: 11px; color: var(--text-3); margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+.pedido-numped { font-size: 12px; color: var(--amber); margin-top: 4px; font-weight: 700; }
 
 .tag { font-family: 'Oswald'; font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px; text-transform: uppercase; }
 .tag.pendente { background: rgba(245, 158, 11, .15); color: var(--yellow); border: 1px solid rgba(245, 158, 11, .3); }
@@ -218,7 +219,7 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="logo-titulo">JP EMBALAGENS</div>
     <div style="font-family:'Oswald'; font-size: 13px; color:#009FE3; letter-spacing:5px; margin-top:2px;">CAIXAS DE PAPELÃO</div>
-    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.5.1</span></div>
+    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.5.2</span></div>
   </div>
 
   <!-- LISTA DE LAUDISTAS -->
@@ -266,7 +267,7 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="info">
       <div class="titulo">JP LAUDO</div>
-      <div class="sub">Qualidade · <span class="versao-badge">v2.5.1</span></div>
+      <div class="sub">Qualidade · <span class="versao-badge">v2.5.2</span></div>
     </div>
     <div class="laudista-info" id="laudista-logado-info">—</div>
     <button onclick="trocarPainelLaudo()" title="Trocar de painel" style="background:rgba(168,139,250,.15);border:1px solid rgba(168,139,250,.3);color:#a78bfa;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer;margin-left:6px">🏠</button>
@@ -296,7 +297,7 @@ input, textarea, select { font-family: inherit; }
 // JP LAUDO v1.9.6 - PAINEL DE QUALIDADE / LAUDO TÉCNICO
 // ============================================================================
 
-const VERSAO = 'v2.5.1';
+const VERSAO = 'v2.5.2';
 const TOLERANCIA_GRAMATURA = 0.05; // 5%
 const TOLERANCIA_COLUNA = 0.05; // 5%
 const MAX_TESTES = 3;
@@ -604,6 +605,13 @@ function getLaudoDoPedido(pedidoId) {
 function getCaixaPorCodigo(codigo) {
   return STATE.caixas.find(c => c.codigo === codigo) || null;
 }
+// Número do pedido (etiqueta) — vem do _numPed ou da obs "Ped 12345"
+function numPedDe(p) {
+  if (!p) return '';
+  if (p._numPed) return String(p._numPed);
+  const m = (p.obs || '').match(/Ped\s+(\d+)/i);
+  return m ? m[1] : '';
+}
 
 // v1.9.7 — Monta linha de cores de impressão (bolinhas coloridas) para o laudo
 function corLaudoHTML(caixa) {
@@ -741,6 +749,7 @@ function renderCardsPedidos() {
           <div>
             <div class="pedido-codigo">${p.caixaCodigo || p.codigo || 'SEM CÓDIGO'}</div>
             <div class="pedido-cliente">${p.cliente || '—'}</div>
+            ${numPedDe(p) ? `<div class="pedido-numped">📦 Pedido ${numPedDe(p)}</div>` : ''}
           </div>
           <div class="tag ${tagClass}">${tagTxt}</div>
         </div>
@@ -789,6 +798,10 @@ function abrirDetalhePedido(pedido) {
     <div class="detalhe-bloco">
       <div class="detalhe-bloco-titulo">📦 Pedido</div>
       <div class="detalhe-grid">
+        ${numPedDe(pedido) ? `<div class="detalhe-item">
+          <div class="label">Nº do pedido</div>
+          <div class="valor">📦 ${numPedDe(pedido)}</div>
+        </div>` : ''}
         <div class="detalhe-item">
           <div class="label">Código</div>
           <div class="valor">${pedido.caixaCodigo || pedido.codigo || '—'}</div>
@@ -1280,6 +1293,10 @@ function abrirLaudoGerado(pedido) {
             <td style="padding:4px 6px;color:#666;width:30%">Cliente</td>
             <td style="padding:4px 6px;font-weight:bold">${pedido.cliente || '—'}</td>
           </tr>
+          ${numPedDe(pedido) ? `<tr>
+            <td style="padding:4px 6px;color:#666">Nº do pedido</td>
+            <td style="padding:4px 6px;font-weight:bold">${numPedDe(pedido)}</td>
+          </tr>` : ''}
           <tr>
             <td style="padding:4px 6px;color:#666">Código da caixa</td>
             <td style="padding:4px 6px;font-weight:bold">${pedido.caixaCodigo || '—'}</td>
@@ -1505,7 +1522,7 @@ async function enviarWhatsApp(pedido, numLaudo) {
     // Baixa o PDF (usuário anexa no whatsapp manualmente)
     await html2pdf().set(opt).from(el).save();
 
-    const msg = `🏭 *JP EMBALAGENS*\n\nLaudo Técnico Nº ${numLaudo}\nCliente: ${pedido.cliente}\nCaixa: ${pedido.caixaCodigo}\nNF: ${getLaudoDoPedido(pedido.id).finalizacao.nf}\n\nSegue em anexo o laudo técnico de qualidade do pedido.\n\nAtenciosamente,\nQualidade JP Embalagens`;
+    const msg = `🏭 *JP EMBALAGENS*\n\nLaudo Técnico Nº ${numLaudo}\nCliente: ${pedido.cliente}\n${numPedDe(pedido) ? `Pedido: ${numPedDe(pedido)}\n` : ''}Caixa: ${pedido.caixaCodigo}\nNF: ${getLaudoDoPedido(pedido.id).finalizacao.nf}\n\nSegue em anexo o laudo técnico de qualidade do pedido.\n\nAtenciosamente,\nQualidade JP Embalagens`;
     abrirModal(`
       <div class="modal-titulo">📱 Enviar via WhatsApp</div>
       <div class="modal-sub">PDF baixado! Cole o número do cliente e abra o WhatsApp pra anexar o PDF.</div>
@@ -1546,7 +1563,7 @@ function imprimirLaudo() {
 
 function abrirEmail(pedido, email, numLaudo) {
   const subj = `Laudo Técnico Nº ${numLaudo} - JP Embalagens`;
-  const body = `Prezado(a) cliente,\n\nSegue em anexo o laudo técnico de qualidade referente ao pedido:\n\nCliente: ${pedido.cliente}\nCódigo da caixa: ${pedido.caixaCodigo}\nNF: ${getLaudoDoPedido(pedido.id).finalizacao.nf}\n\nQualquer dúvida, estamos à disposição.\n\nAtenciosamente,\nControle de Qualidade\nJP Embalagens`;
+  const body = `Prezado(a) cliente,\n\nSegue em anexo o laudo técnico de qualidade referente ao pedido:\n\nCliente: ${pedido.cliente}\n${numPedDe(pedido) ? `Nº do pedido: ${numPedDe(pedido)}\n` : ''}Código da caixa: ${pedido.caixaCodigo}\nNF: ${getLaudoDoPedido(pedido.id).finalizacao.nf}\n\nQualquer dúvida, estamos à disposição.\n\nAtenciosamente,\nControle de Qualidade\nJP Embalagens`;
   const mailto = `mailto:${email}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
   window.location.href = mailto;
   toast('Baixe o PDF e anexe ao e-mail', 'info', 3500);

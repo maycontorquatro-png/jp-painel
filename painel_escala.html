@@ -640,7 +640,7 @@ body {
   <div class="app-header">
     <div class="app-titulo">
       🚛 JP ESCALA
-      <span class="badge">v2.5.1</span>
+      <span class="badge">v2.5.2</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span class="user-info" id="user-info"></span>
@@ -1099,23 +1099,41 @@ $('btn-ontem').onclick = () => { const d=new Date(); d.setDate(d.getDate()-1); s
 $('data-input').onchange = e => setData(e.target.value);
 
 // ─── STATUS ───
+const normEsc = s => (s||'').toString().toLowerCase().trim().replace(/\s+/g,' ');
+// Cargas que batem com a viagem (mesma placa + mesmo dia)
+function cargasDaViagem(v){
+  if(!v) return [];
+  const placaNorm = normEsc(v.caminhaoPlaca);
+  return STATE.cargas.filter(c => {
+    if(!c || normEsc(c.placa) !== placaNorm) return false;
+    const dt = c.iniciadoEm ? new Date(c.iniciadoEm) : (c.finalizadoEm ? new Date(c.finalizadoEm) : null);
+    if(!dt) return false;
+    return ymd(dt) === v.data;
+  });
+}
+// Números de pedido do cliente daquele destino (vem dos paletes da carga)
+function pedidosDoDestino(v, d){
+  const cli = normEsc(d && (d.clienteNome || d.destinoLivre));
+  if(!cli) return [];
+  const set = new Set();
+  cargasDaViagem(v).forEach(c => (c.paletes||[]).forEach(p => {
+    if(!p.numPed) return;
+    const pc = normEsc(p.cliente);
+    if(pc && (pc.includes(cli) || cli.includes(pc))) set.add(String(p.numPed));
+  }));
+  return Array.from(set);
+}
 function calcularStatus(v){
   if(!v) return 'aguardando';
   if(v.status === 'entregue' || v.status === 'em_rota') return 'saiu';
   if(v.status === 'cancelado') return 'cancelado';
 
-  const norm = s => (s||'').toString().toLowerCase().trim().replace(/\s+/g,' ');
+  const norm = normEsc;
   const destinos = Array.isArray(v.destinos) && v.destinos.length > 0 ? v.destinos : [{clienteNome: v.clienteNome, destinoLivre: v.destinoLivre}];
   const clientesEsc = destinos.map(d => norm(d.clienteNome || d.destinoLivre)).filter(Boolean);
   if(clientesEsc.length === 0) return 'aguardando';
 
-  const placaNorm = norm(v.caminhaoPlaca);
-  const cargasV = STATE.cargas.filter(c => {
-    if(!c || norm(c.placa) !== placaNorm) return false;
-    const dt = c.iniciadoEm ? new Date(c.iniciadoEm) : (c.finalizadoEm ? new Date(c.finalizadoEm) : null);
-    if(!dt) return false;
-    return ymd(dt) === v.data;
-  });
+  const cargasV = cargasDaViagem(v);
   if(cargasV.length === 0) return 'aguardando';
 
   const cargadosSet = new Set();
@@ -1186,9 +1204,11 @@ function render(){
         if(cli) enderecoNav = enderecoCompletoCliente(cli).trim();
       }
       const refTxt = d.referencia ? ` <span style="color:var(--text-4)">· 🧭 ${escapeHtml(d.referencia)}</span>` : '';
+      const peds = pedidosDoDestino(v, d);
       return `<div class="vg-dest">
         ${destinos.length > 1 ? `<span style="color:var(--blue-2);font-weight:700">${i+1}.</span> ` : '📍 '}
         ${escapeHtml(nome)}
+        ${peds.length ? `<div class="vg-dest-endereco" style="color:var(--blue-2)">📦 Pedido${peds.length>1?'s':''} ${peds.map(escapeHtml).join(', ')}</div>` : ''}
         ${enderecoNav ? `<div class="vg-dest-endereco">${escapeHtml(enderecoNav)}${refTxt}</div>` : (d.referencia ? `<div class="vg-dest-endereco">🧭 ${escapeHtml(d.referencia)}</div>` : '')}
         ${enderecoNav ? `<button class="btn-rota" onclick="abrirRota(${JSON.stringify(enderecoNav).replace(/"/g,'&quot;')})">🧭 Abrir rota no GPS</button>` : ''}
       </div>`;

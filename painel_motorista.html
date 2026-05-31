@@ -98,7 +98,7 @@ h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
   <div class="login-top">
     <div class="ico">🚚</div>
     <h1>APP DO MOTORISTA</h1>
-    <p>JP Embalagens · <span class="badge">v2.5.1</span></p>
+    <p>JP Embalagens · <span class="badge">v2.5.2</span></p>
   </div>
   <div class="login-body" id="login-lista-step">
     <div style="font-size:12px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">Quem é você?</div>
@@ -274,18 +274,35 @@ function minhasViagensHoje(){
 }
 
 // ===== Status de carga (espelha a lógica da escala) =====
-function statusCarga(v){
-  if(!v) return 'aguardando';
-  const destinos = (Array.isArray(v.destinos)&&v.destinos.length)?v.destinos:[{clienteNome:v.clienteNome,destinoLivre:v.destinoLivre}];
-  const clientesEsc = destinos.map(d=>norm(d.clienteNome||d.destinoLivre)).filter(Boolean);
-  if(!clientesEsc.length) return 'aguardando';
+// Cargas que batem com a viagem (mesma placa + mesmo dia)
+function cargasDaViagem(v){
+  if(!v) return [];
   const placaNorm = norm(v.caminhaoPlaca);
-  const cargasV = CARGAS.filter(c=>{
+  return CARGAS.filter(c=>{
     if(!c || norm(c.placa)!==placaNorm) return false;
     const dt = c.iniciadoEm?new Date(c.iniciadoEm):(c.finalizadoEm?new Date(c.finalizadoEm):null);
     if(!dt) return false;
     return ymd(dt)===v.data;
   });
+}
+// Números de pedido do cliente daquele destino (vem dos paletes da carga)
+function pedidosDoDestino(v, d){
+  const cli = norm(d&&(d.clienteNome||d.destinoLivre));
+  if(!cli) return [];
+  const set=new Set();
+  cargasDaViagem(v).forEach(c=>(c.paletes||[]).forEach(p=>{
+    if(!p.numPed) return;
+    const pc = norm(p.cliente);
+    if(pc && (pc.includes(cli)||cli.includes(pc))) set.add(String(p.numPed));
+  }));
+  return Array.from(set);
+}
+function statusCarga(v){
+  if(!v) return 'aguardando';
+  const destinos = (Array.isArray(v.destinos)&&v.destinos.length)?v.destinos:[{clienteNome:v.clienteNome,destinoLivre:v.destinoLivre}];
+  const clientesEsc = destinos.map(d=>norm(d.clienteNome||d.destinoLivre)).filter(Boolean);
+  if(!clientesEsc.length) return 'aguardando';
+  const cargasV = cargasDaViagem(v);
   if(!cargasV.length) return 'aguardando';
   const cargadosSet=new Set();
   cargasV.forEach(c=>(c.paletes||[]).forEach(p=>{ if(p.cliente) cargadosSet.add(norm(p.cliente)); }));
@@ -397,8 +414,10 @@ function render(){
       const estadoDest = (ent.destinos && ent.destinos[i] && ent.destinos[i].estado) || 'caminho';
       const ei = ESTADO_INFO[estadoDest]||ESTADO_INFO.caminho;
       const horaEstado = (ent.destinos && ent.destinos[i] && ent.destinos[i].hora) || '';
+      const peds = pedidosDoDestino(v, d);
       return `<div class="dest">
         <div class="dn">${destinos.length>1?`<span style="color:var(--blue-2)">${i+1}.</span>`:'📍'} ${esc(nome)}</div>
+        ${peds.length?`<div class="de" style="color:var(--blue-2)">📦 Pedido${peds.length>1?'s':''} ${peds.map(esc).join(', ')}</div>`:''}
         ${end?`<div class="de">${esc(end)}${ref?` · 🧭 ${esc(ref)}`:''}</div>`:(ref?`<div class="de">🧭 ${esc(ref)}</div>`:'')}
         <div class="meta">
           ${end?`<span class="chip chip-rota" onclick="abrirRota(${JSON.stringify(end).replace(/"/g,'&quot;')})">🧭 Rota</span>`:''}
