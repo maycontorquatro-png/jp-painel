@@ -13722,6 +13722,22 @@ async function marcarManutencaoResolvida(id){
 }
 window.marcarManutencaoResolvida = marcarManutencaoResolvida;
 
+// Quantos dias a manutenção está aberta (0 = aberta hoje)
+function mntDiasAberta(m){
+  if(!m || !m.data) return null;
+  const d = new Date(m.data + 'T00:00:00');
+  if(isNaN(d.getTime())) return null;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const dias = Math.floor((hoje - d) / 86400000);
+  return dias < 0 ? 0 : dias;
+}
+function mntDiasTexto(m){
+  const dias = mntDiasAberta(m);
+  if(dias == null) return '';
+  if(dias === 0) return 'aberta hoje';
+  return `${dias} dia${dias>1?'s':''} em atraso`;
+}
+
 // v2.4.2 — texto detalhado de UMA manutenção (com link da foto)
 function mntTextoItem(m, comLinks){
   let t = '🔧 *MANUTENÇÃO — JP EMBALAGENS*\n\n';
@@ -13731,6 +13747,8 @@ function mntTextoItem(m, comLinks){
   t += `*O que fazer:* ${m.descricao||''}\n`;
   t += `*Operador:* ${m.operadorNome||'—'}\n`;
   t += `*Quando:* ${m.data||''} ${m.hora||''}`;
+  const dt = mntDiasTexto(m);
+  if(dt) t += `\n*Em atraso:* ${dt}`;
   if(comLinks){
     const fotos = (m.fotos||[]).filter(f=>typeof f==='string' && f.startsWith('http'));
     if(fotos.length) t += `\n\n📸 Foto:\n${fotos.join('\n')}`;
@@ -13744,15 +13762,15 @@ function mntTextoItem(m, comLinks){
 async function mntAvisar(id){
   const m = MANUTENCOES.find(x=>x.id===id);
   if(!m){ toast('Manutenção não encontrada','err'); return; }
-  const texto = mntTextoItem(m, false);
   const fotos = (m.fotos||[]).filter(f=>typeof f==='string' && f.startsWith('http'));
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  // Copia o texto antes (backup, caso o WhatsApp não use como legenda)
-  try { if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(texto); } catch(e){}
-
-  // 1) Tenta compartilhar COM a foto (melhor caminho no celular)
-  if(fotos.length && navigator.canShare){
+  // CELULAR + FOTO → folha de compartilhar (única forma de mandar o ARQUIVO da foto;
+  // aí você escolhe o WhatsApp e a imagem vai junto)
+  if(isMobile && fotos.length && navigator.canShare){
     try {
+      const texto = mntTextoItem(m, false);
+      try { if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(texto); } catch(e){}
       toast('📥 Preparando foto...','info');
       const files = [];
       for(const url of fotos.slice(0,5)){
@@ -13765,29 +13783,18 @@ async function mntAvisar(id){
       }
       if(files.length && navigator.canShare({ files })){
         await navigator.share({ text: texto, files });
-        return; // compartilhou com foto — pronto
+        return;
       }
     } catch(eShare){
       if(eShare && eShare.name === 'AbortError') return; // usuário cancelou
-      console.warn('Share com foto falhou, usando fallback:', eShare);
+      console.warn('Share com foto falhou, abrindo WhatsApp:', eShare);
     }
   }
 
-  // 2) Sem foto OU sem suporte a compartilhar arquivo → tenta compartilhar só texto
-  if(navigator.share){
-    try { await navigator.share({ text: mntTextoItem(m, true) }); return; }
-    catch(e){ if(e && e.name === 'AbortError') return; }
-  }
-
-  // 3) Fallback final: copia texto (com link da foto) e abre o WhatsApp
+  // DEMAIS CASOS → abre o WhatsApp DIRETO com o texto (link da foto vai no texto)
   const textoLink = mntTextoItem(m, true);
-  try { if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(textoLink); toast('✓ Copiado! Cole no grupo do WhatsApp'); }
-  catch(e){ alert(textoLink); }
-  setTimeout(()=>{
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if(isMobile) window.location.href = 'whatsapp://send';
-    else window.open('https://web.whatsapp.com/', '_blank');
-  }, 400);
+  try { if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(textoLink); } catch(e){}
+  window.open('https://wa.me/?text=' + encodeURIComponent(textoLink), '_blank');
 }
 window.mntAvisar = mntAvisar;
 
@@ -13797,7 +13804,8 @@ function mntTextoGrupo(){
   if(!abertas.length) return '';
   let t = '🔧 *MANUTENÇÕES PENDENTES — JP EMBALAGENS*\n\n';
   abertas.forEach((m,i)=>{
-    t += `${i+1}. ${m.urgenciaLabel||''} *${m.maquina||'—'}*\n`;
+    const dt = mntDiasTexto(m);
+    t += `${i+1}. ${m.urgenciaLabel||''} *${m.maquina||'—'}*${dt?` _(${dt})_`:''}\n`;
     t += `   ${m.tipoLabel||''} — ${m.descricao||''}\n`;
     t += `   👤 ${m.operadorNome||'—'} · ${m.data||''}\n`;
     const fotos = (m.fotos||[]).filter(f=>typeof f==='string' && f.startsWith('http'));
