@@ -144,6 +144,10 @@ body {
 .card.motorista::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
 .card.motorista:hover { border-color: #818cf8; }
 .card.motorista .icon { background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); }
+.card.vendedor { border-color: rgba(16,185,129,.3); }
+.card.vendedor::before { background: linear-gradient(90deg, #009FE3, #10b981); }
+.card.vendedor:hover { border-color: #10b981; }
+.card.vendedor .icon { background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.3); }
 
 .icon {
   width: 52px;
@@ -330,10 +334,17 @@ body {
       <div class="card-sub">Viagens do dia, rota GPS, aviso de carga e status de entrega</div>
       <div class="card-tag">Para o motorista · Login: nome + PIN</div>
     </a>
+
+    <a href="painel_vendedor.html" class="card vendedor" onclick="lembrarEscolha('vendedor')" style="grid-column:1/-1">
+      <div class="icon">🤝</div>
+      <div class="card-titulo">App do Vendedor</div>
+      <div class="card-sub">Clientes, status dos pedidos e solicitar orçamento</div>
+      <div class="card-tag">Para o vendedor · Login: nome + PIN</div>
+    </a>
   </div>
 
   <div class="footer">
-    <span class="versao">v2.5.2</span> ·
+    <span class="versao">v2.6.0</span> ·
     <span class="status"><span class="dot"></span>Servidor online</span>
   </div>
 </div>
@@ -346,7 +357,8 @@ const PAINEIS = {
   expedicao: { arquivo: 'painel_expedicao.html', nome: 'Expedição', icone: '🚛' },
   laudo: { arquivo: 'painel_laudo.html', nome: 'Laudo', icone: '🔬' },
   escala: { arquivo: 'painel_escala.html', nome: 'Escala', icone: '🚛📋' },
-  motorista: { arquivo: 'painel_motorista.html', nome: 'Motorista', icone: '🚚' }
+  motorista: { arquivo: 'painel_motorista.html', nome: 'Motorista', icone: '🚚' },
+  vendedor: { arquivo: 'painel_vendedor.html', nome: 'Vendedor', icone: '🤝' }
 };
 
 let redirectTimer = null;
