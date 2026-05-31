@@ -1210,12 +1210,12 @@ $('orc-ver-imprimir').onclick = ()=>{
   if(!ORC_VER_ATUAL) return;
   const s = ORC_VER_ATUAL, o = s.orcamento;
   $('print-orc').innerHTML = notaOrcHTML(s, o);
-  // Nome do arquivo do PDF: "Cliente - Orçamento Nº - dd/mm/aa"
+  // Nome do arquivo do PDF: "Cliente - Orç NNNN - dd-mm-aa"
   const base = o.enviadoEm || s.atualizadoEm || s.criadoEm || Date.now();
   const d = new Date(base);
   const dd = String(d.getDate()).padStart(2,'0'), mm = String(d.getMonth()+1).padStart(2,'0'), aa = String(d.getFullYear()).slice(-2);
   const tituloAntigo = document.title;
-  document.title = `${(s.cliente||'Cliente').trim()} - Orçamento ${o.numero||'—'} - ${dd}/${mm}/${aa}`;
+  document.title = `${(s.cliente||'Cliente').trim()} - Orç ${o.numero||'—'} - ${dd}-${mm}-${aa}`;
   setTimeout(()=>{ window.print(); setTimeout(()=>{ document.title = tituloAntigo; }, 800); }, 60);
 };
 $('orc-ver-whats').onclick = ()=>{

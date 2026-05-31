@@ -12055,7 +12055,7 @@ function orcNomeArquivo(o){
   const mm = String(d.getMonth()+1).padStart(2,'0');
   const aa = String(d.getFullYear()).slice(-2);
   const cli = (o.cliente||'Cliente').trim();
-  return `${cli} - Orçamento ${o.numero||'—'} - ${dd}/${mm}/${aa}`;
+  return `${cli} - Orç ${o.numero||'—'} - ${dd}-${mm}-${aa}`;
 }
 function orcImprimir(){
   if(!ORC_VER_ATUAL) return;
