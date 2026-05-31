@@ -42,6 +42,10 @@ h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
 .mot-av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#009FE3,#33B5E8);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .mot-item .nm{font-weight:700;font-size:16px}
 .mot-item .sb{font-size:12px;color:var(--text-4)}
+.cn-x{flex-shrink:0;background:transparent;border:none;color:var(--text-4);font-size:15px;cursor:pointer;padding:6px 8px;border-radius:8px}
+.cn-x:active{background:rgba(239,68,68,.18);color:#fca5a5}
+.login-input{width:100%;background:var(--bg-1);border:1px solid var(--line);border-radius:12px;padding:14px;color:var(--text-1);font-size:16px;font-family:inherit;margin-bottom:12px}
+.login-input::placeholder{color:var(--text-4)}
 /* PIN */
 #pin-step{display:none;padding:18px;text-align:center}
 .pin-dots{display:flex;gap:14px;justify-content:center;margin:18px 0 24px}
@@ -74,6 +78,10 @@ h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
 .cli.aberto .cli-seta{transform:rotate(90deg)}
 .cli-body{display:none;padding:0 14px 14px}
 .cli.aberto .cli-body{display:block}
+.cli-dados{background:var(--bg-2);border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-bottom:10px;font-size:13px}
+.cd-ln{display:flex;gap:7px;align-items:flex-start;color:var(--text-2);margin-bottom:5px;line-height:1.35}
+.cd-ln:last-child{margin-bottom:0}
+.cd-ln span{flex:1;min-width:0;word-break:break-word}
 
 .fase-grp{margin-top:12px}
 .fase-tit{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:5px 10px;border-radius:7px;display:inline-block;margin-bottom:8px}
@@ -140,6 +148,30 @@ h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
   .po-rod{margin-top:24px;font-size:11px;color:#888;text-align:center;border-top:1px solid #eee;padding-top:10px}
 }
 
+/* NOTA / ORÇAMENTO limpo (igual o sistema) */
+.modal-card.modal-card-nota{background:#fff;color:#222;padding:0;max-width:520px}
+.modal-card-nota .modal-handle{background:#ccc;margin-top:10px}
+.nota{font-family:Arial,Helvetica,sans-serif;color:#222;padding:14px 16px}
+.nota-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #009FE3;padding-bottom:12px;margin-bottom:14px}
+.nota-logo{font-family:'Oswald','Arial Narrow',sans-serif;font-size:22px;font-weight:700;color:#009FE3;letter-spacing:1px}
+.nota-sub{font-size:11px;color:#777;margin-top:2px}
+.nota-num-lbl{font-size:11px;color:#777;text-transform:uppercase;letter-spacing:1px;text-align:right}
+.nota-num{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:#009FE3;text-align:right}
+.nota-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;font-size:13px}
+.nota-cap{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.nota-tab{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px}
+.nota-tab th{background:#f4f4f4;border-bottom:2px solid #009FE3;padding:8px;text-align:left}
+.nota-tab td{padding:6px 8px;border-bottom:1px solid #eee;vertical-align:top}
+.nota-tab .r{text-align:right;font-family:'JetBrains Mono',monospace}
+.nota-tot{display:flex;justify-content:flex-end}
+.nota-tot-in{min-width:240px;font-size:13px}
+.nota-tot-in .ln{display:flex;justify-content:space-between;padding:4px 0}
+.nota-tot-in .big{border-top:2px solid #009FE3;padding-top:8px;font-size:16px;font-weight:700;color:#009FE3}
+.nota-cond{margin-top:16px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#777}
+.nota-acoes{display:flex;gap:8px;padding:14px 16px;border-top:1px solid #eee;background:#fafafa;position:sticky;bottom:0}
+.nota-acoes .btn{flex:1;padding:11px 8px;font-size:14px}
+.btn-out-blue{background:#fff;border:1px solid #009FE3;color:#0284c7}
+
 /* MODAL */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:none;align-items:flex-end;justify-content:center}
 .modal.ativo{display:flex}
@@ -178,18 +210,33 @@ h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
     <h1>APP DO VENDEDOR</h1>
     <p>JP Embalagens · <span class="badge">v2.6.0</span></p>
   </div>
-  <div class="login-body" id="login-lista-step">
-    <div style="font-size:12px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">Quem é você?</div>
-    <div id="lista-vendedores"></div>
-    <div id="login-status" style="text-align:center;color:var(--text-4);font-size:13px;margin-top:14px">⏳ Carregando vendedores...</div>
-  </div>
-  <div id="pin-step">
-    <div class="mot-av" style="margin:0 auto 10px;width:54px;height:54px;font-size:26px">🤝</div>
-    <h2 id="pin-nome" style="font-size:20px">—</h2>
-    <p style="color:var(--text-3);font-size:13px;margin:6px 0 0">Digite seu PIN de 4 dígitos</p>
-    <div class="pin-dots" id="pin-dots"></div>
-    <div class="numpad" id="numpad"></div>
-    <button class="btn btn-ghost" style="margin-top:18px;width:100%;max-width:300px" id="pin-voltar">← Voltar</button>
+  <div class="login-body">
+    <!-- ETAPA A: nomes salvos neste aparelho -->
+    <div id="login-step-conhecidos" style="display:none">
+      <div style="font-size:12px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">Quem é você?</div>
+      <div id="lista-conhecidos"></div>
+      <button class="btn btn-ghost" id="btn-outro-nome" style="width:100%;margin-top:6px">+ Entrar com outro nome</button>
+    </div>
+
+    <!-- ETAPA B: login direto (nome + senha) -->
+    <div id="login-step-form" style="display:none">
+      <div style="font-size:12px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:12px">Entrar</div>
+      <input class="login-input" id="login-nome" type="text" placeholder="Seu nome" autocomplete="username" autocapitalize="words">
+      <input class="login-input" id="login-senha" type="password" inputmode="numeric" placeholder="Senha" autocomplete="current-password">
+      <button class="btn btn-green" id="btn-entrar" style="width:100%;padding:14px;font-size:16px;margin-top:2px">Entrar</button>
+      <button class="btn btn-ghost" id="btn-voltar-conhecidos" style="width:100%;margin-top:8px;display:none">← Voltar</button>
+      <div id="login-status" style="text-align:center;color:var(--text-4);font-size:13px;margin-top:14px"></div>
+    </div>
+
+    <!-- ETAPA C: senha (teclado) de um nome salvo -->
+    <div id="login-step-senha" style="display:none;text-align:center">
+      <div class="mot-av" style="margin:0 auto 10px;width:54px;height:54px;font-size:26px">🤝</div>
+      <h2 id="senha-nome" style="font-size:20px">—</h2>
+      <p style="color:var(--text-3);font-size:13px;margin:6px 0 0">Digite sua senha</p>
+      <div class="pin-dots" id="pin-dots"></div>
+      <div class="numpad" id="numpad"></div>
+      <button class="btn btn-ghost" style="margin-top:18px;width:100%;max-width:300px" id="senha-voltar">← Voltar</button>
+    </div>
   </div>
 </div>
 
@@ -264,6 +311,20 @@ h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
 </div>
 
 <div id="print-orc"></div>
+
+<!-- ===== MODAL: ver orçamento (nota limpa, igual o sistema) ===== -->
+<div class="modal" id="modal-orc-ver">
+  <div class="modal-card modal-card-nota">
+    <div class="modal-handle"></div>
+    <div id="orc-ver-body"></div>
+    <div class="nota-acoes">
+      <button class="btn bt-out" id="orc-ver-fechar">Fechar</button>
+      <button class="btn btn-out-blue" id="orc-ver-imprimir">🖨️ Imprimir / PDF</button>
+      <button class="btn btn-green" id="orc-ver-whats">📱 WhatsApp</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -314,66 +375,126 @@ function numPedDe(p){ if(p&&p._numPed!=null&&String(p._numPed).trim()!=='') retu
 // ===== Estado =====
 let VENDEDORES = [], CLIENTES = [], PEDIDOS = [], CARGAS = [], VIAGENS = [], ENTREGAS = {}, CHAPAS = [];
 let MINHAS_SOLIC = [];       // solicitações/orçamentos deste vendedor (da nuvem)
-let SESSAO = null, LOGIN_SEL = null, PIN_BUF = '';
+let SESSAO = null;
 const ABERTOS = new Set();   // clientes expandidos
 let BUSCA = '', VISTA = 'clientes';
 const PK_SESSAO = 'jp_vend_sessao';
 const PK_SOLIC = 'jp_vend_solicitacoes';
+const PK_CONHECIDOS = 'jp_vend_conhecidos';  // nomes que já entraram NESTE aparelho
 
-// ===== Carregar vendedores pra login =====
+let CONHECIDOS = [];   // [{id,nome}]
+let SENHA_SEL = null;  // vendedor escolhido na etapa de senha
+let SENHA_BUF = '';
+
+// ===== Carregar vendedores pra login (silencioso) =====
 function carregarVendedoresLogin(){
-  if(!db){ $('login-status').textContent='Sem conexão.'; return; }
+  if(!db){ return; }
   db.collection('jp_sistema').doc('vendedores').onSnapshot(doc=>{
     VENDEDORES = (doc.exists && doc.data().vendedores) ? doc.data().vendedores : [];
-    renderListaVendedores();
-  }, ()=>{ $('login-status').textContent='Erro ao carregar. Tente recarregar.'; });
-}
-function renderListaVendedores(){
-  const cont = $('lista-vendedores');
-  $('login-status').style.display = VENDEDORES.length ? 'none' : 'block';
-  if(!VENDEDORES.length){ $('login-status').textContent='Nenhum vendedor cadastrado. Peça ao PCP.'; return; }
-  cont.innerHTML = VENDEDORES.slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(v=>`
-    <div class="mot-item" onclick="selecionarVendedor('${v.id}')">
-      <div class="mot-av">🤝</div>
-      <div><div class="nm">${esc(v.nome)}</div><div class="sb">${esc(v.email||'Vendedor')}</div></div>
-    </div>`).join('');
+  });
 }
 
-// ===== Login PIN =====
-window.selecionarVendedor = function(id){
-  const v = VENDEDORES.find(x=>x.id===id);
-  if(!v) return;
-  if(!v.pin){ toast('Seu PIN ainda não foi cadastrado. Peça ao PCP.','err'); return; }
-  LOGIN_SEL = v; PIN_BUF = '';
-  $('pin-nome').textContent = v.nome;
-  $('login-lista-step').style.display='none';
-  $('pin-step').style.display='block';
-  renderPinDots();
-};
-function renderPinDots(){ $('pin-dots').innerHTML = [0,1,2,3].map(i=>`<div class="pin-dot ${i<PIN_BUF.length?'on':''}"></div>`).join(''); }
-function montarNumpad(){
-  const teclas = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
-  $('numpad').innerHTML = teclas.map(t=> t==='' ? '<div></div>' : `<button onclick="digitarPin('${t}')">${t}</button>`).join('');
+// ===== Etapas de login =====
+function carregarConhecidos(){
+  try { CONHECIDOS = JSON.parse(localStorage.getItem(PK_CONHECIDOS)||'[]'); } catch(e){ CONHECIDOS = []; }
+  if(!Array.isArray(CONHECIDOS)) CONHECIDOS = [];
 }
-window.digitarPin = function(t){
-  if(t==='⌫'){ PIN_BUF = PIN_BUF.slice(0,-1); renderPinDots(); return; }
-  if(PIN_BUF.length>=4) return;
-  PIN_BUF += t; renderPinDots();
-  if(PIN_BUF.length===4) setTimeout(validarPin, 150);
-};
-function validarPin(){
-  if(!LOGIN_SEL) return;
-  if(PIN_BUF === String(LOGIN_SEL.pin)){
-    SESSAO = { id: LOGIN_SEL.id, nome: LOGIN_SEL.nome, email: LOGIN_SEL.email||'' };
-    localStorage.setItem(PK_SESSAO, JSON.stringify(SESSAO));
-    entrarApp();
+function salvarConhecido(v){
+  carregarConhecidos();
+  CONHECIDOS = CONHECIDOS.filter(c => c.id !== v.id);
+  CONHECIDOS.unshift({ id: v.id, nome: v.nome });
+  localStorage.setItem(PK_CONHECIDOS, JSON.stringify(CONHECIDOS));
+}
+function mostrarEtapaLogin(){
+  carregarConhecidos();
+  if(CONHECIDOS.length){
+    renderConhecidos();
+    irEtapa('conhecidos');
   } else {
-    PIN_BUF=''; renderPinDots();
-    if(navigator.vibrate) navigator.vibrate([60,40,60]);
-    toast('PIN incorreto','err');
+    irEtapa('form');
   }
 }
-$('pin-voltar').onclick = ()=>{ $('pin-step').style.display='none'; $('login-lista-step').style.display='block'; };
+function irEtapa(qual){
+  $('login-step-conhecidos').style.display = qual==='conhecidos' ? 'block' : 'none';
+  $('login-step-form').style.display       = qual==='form'       ? 'block' : 'none';
+  $('login-step-senha').style.display      = qual==='senha'      ? 'block' : 'none';
+  // botão voltar do form só aparece quando já tem nomes salvos
+  $('btn-voltar-conhecidos').style.display = CONHECIDOS.length ? 'block' : 'none';
+}
+function renderConhecidos(){
+  $('lista-conhecidos').innerHTML = CONHECIDOS.map(c=>`
+    <div class="mot-item" onclick="escolherConhecido('${c.id}')">
+      <div class="mot-av">🤝</div>
+      <div style="flex:1;min-width:0"><div class="nm">${esc(c.nome)}</div><div class="sb">Toque pra digitar a senha</div></div>
+      <button class="cn-x" title="Remover" onclick="event.stopPropagation();removerConhecido('${c.id}')">✕</button>
+    </div>`).join('');
+}
+window.removerConhecido = function(id){
+  carregarConhecidos();
+  CONHECIDOS = CONHECIDOS.filter(c=>c.id!==id);
+  localStorage.setItem(PK_CONHECIDOS, JSON.stringify(CONHECIDOS));
+  mostrarEtapaLogin();
+};
+
+// ===== Etapa senha (teclado) =====
+window.escolherConhecido = function(id){
+  const v = VENDEDORES.find(x=>x.id===id);
+  if(!VENDEDORES.length){ toast('Carregando dados... tente de novo','err'); return; }
+  if(!v){ toast('Seu cadastro não foi encontrado. Entre com o nome.','err'); removerConhecido(id); irEtapa('form'); return; }
+  SENHA_SEL = v; SENHA_BUF = '';
+  $('senha-nome').textContent = v.nome;
+  renderPinDots();
+  irEtapa('senha');
+};
+function renderPinDots(){ $('pin-dots').innerHTML = [0,1,2,3].map(i=>`<div class="pin-dot ${i<SENHA_BUF.length?'on':''}"></div>`).join(''); }
+function montarNumpad(){
+  const teclas = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  $('numpad').innerHTML = teclas.map(t=> t==='' ? '<div></div>' : `<button onclick="digitarSenha('${t}')">${t}</button>`).join('');
+}
+window.digitarSenha = function(t){
+  if(t==='⌫'){ SENHA_BUF = SENHA_BUF.slice(0,-1); renderPinDots(); return; }
+  if(SENHA_BUF.length>=4) return;
+  SENHA_BUF += t; renderPinDots();
+  if(SENHA_BUF.length===4) setTimeout(validarSenhaConhecido, 150);
+};
+function validarSenhaConhecido(){
+  if(!SENHA_SEL) return;
+  if(!SENHA_SEL.pin){ toast('Sua senha ainda não foi cadastrada. Peça ao PCP.','err'); return; }
+  if(SENHA_BUF === String(SENHA_SEL.pin)){
+    finalizarLogin(SENHA_SEL);
+  } else {
+    SENHA_BUF=''; renderPinDots();
+    if(navigator.vibrate) navigator.vibrate([60,40,60]);
+    toast('Senha incorreta','err');
+  }
+}
+$('senha-voltar').onclick = ()=>{ SENHA_SEL=null; SENHA_BUF=''; mostrarEtapaLogin(); };
+
+// ===== Login direto (nome + senha) =====
+function fazerLoginDireto(){
+  const nome  = ($('login-nome').value||'').trim().toLowerCase();
+  const senha = ($('login-senha').value||'').trim();
+  if(!nome){ toast('Digite seu nome','err'); return; }
+  if(!senha){ toast('Digite sua senha','err'); return; }
+  if(!VENDEDORES.length){ toast('Carregando dados... tente de novo','err'); return; }
+  const v = VENDEDORES.find(x => (x.nome||'').trim().toLowerCase() === nome);
+  if(!v){ toast('Vendedor não encontrado. Confira o nome.','err'); return; }
+  if(!v.pin){ toast('Sua senha ainda não foi cadastrada. Peça ao PCP.','err'); return; }
+  if(senha !== String(v.pin)){ if(navigator.vibrate) navigator.vibrate([60,40,60]); toast('Senha incorreta','err'); return; }
+  $('login-nome').value=''; $('login-senha').value='';
+  finalizarLogin(v);
+}
+function finalizarLogin(v){
+  SESSAO = { id: v.id, nome: v.nome, email: v.email||'' };
+  localStorage.setItem(PK_SESSAO, JSON.stringify(SESSAO));
+  salvarConhecido(v);
+  entrarApp();
+}
+$('btn-entrar').onclick = fazerLoginDireto;
+$('login-senha').addEventListener('keydown', e=>{ if(e.key==='Enter') fazerLoginDireto(); });
+$('login-nome').addEventListener('keydown', e=>{ if(e.key==='Enter') $('login-senha').focus(); });
+$('btn-outro-nome').onclick = ()=>irEtapa('form');
+$('btn-voltar-conhecidos').onclick = ()=>mostrarEtapaLogin();
 
 // ===== App =====
 function entrarApp(){
@@ -388,8 +509,9 @@ $('btn-sair').onclick = ()=>{
   SESSAO=null;
   $('screen-app').classList.remove('active');
   $('screen-login').classList.add('active');
-  $('pin-step').style.display='none';
-  $('login-lista-step').style.display='block';
+  $('login-nome').value=''; $('login-senha').value='';
+  SENHA_SEL=null; SENHA_BUF='';
+  mostrarEtapaLogin();
 };
 
 function iniciarDados(){
@@ -472,6 +594,12 @@ function faseDoPedido(p){
 
 // ===== Abas =====
 const fmtBRL = v => 'R$ ' + (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ESTILO_LABEL = { corte_vinco:'Corte e Vinco', maleta_B:'Maleta Normal (B)', maleta_C:'Maleta Normal (C)', maleta_BB:'Maleta Normal (BB)', maleta_BC:'Maleta Normal (BC)' };
+// rótulo do estilo (com fallback p/ orçamentos antigos sem estilo gravado)
+function estiloLabelIt(it){
+  if(it.estilo && ESTILO_LABEL[it.estilo]) return ESTILO_LABEL[it.estilo];
+  return (+it.A>0) ? ('Maleta Normal' + (it.onda?` (${it.onda})`:'')) : 'Corte e Vinco';
+}
 function trocarVista(v){
   VISTA = v;
   $('tab-clientes').classList.toggle('ativo', v==='clientes');
@@ -541,7 +669,7 @@ function renderOrcamentos(){
       <div style="margin-top:8px">${corpo}</div>
       ${s.obs?`<div style="margin-top:8px;font-size:12px;color:var(--text-3)">💬 ${esc(s.obs)}</div>`:''}
       <div class="orcc-acoes">
-        ${pronto?`<button class="btn btn-green" onclick="compartilharOrcamento('${s.id}')">📤 Compartilhar</button>`:''}
+        ${pronto?`<button class="btn btn-green" onclick="verOrcamentoVend('${s.id}')">👁️ Ver / Enviar</button>`:''}
         <button class="btn bt-out" onclick="editarOrcamento('${s.id}')">✏️ Editar</button>
         <button class="btn bt-del" onclick="excluirOrcamentoVend('${s.id}')">🗑️ Excluir</button>
       </div>
@@ -550,6 +678,29 @@ function renderOrcamentos(){
 }
 
 // ===== Render =====
+// Formata telefone/whatsapp (sem mexer no que estiver fora do padrão)
+function fmtFone(v){
+  const d=(v||'').replace(/\D/g,'');
+  if(!d) return '';
+  if(d.length===11) return d.replace(/(\d{2})(\d{5})(\d{4})/,'($1) $2-$3');
+  if(d.length===10) return d.replace(/(\d{2})(\d{4})(\d{4})/,'($1) $2-$3');
+  return v;
+}
+// Bloco de dados do cliente (CNPJ, endereço, contato) — SEM e-mail
+function dadosClienteHtml(c){
+  const end = c.endereco || ([c.rua,c.numero].filter(Boolean).join(', ') + (c.bairro?' - '+c.bairro:''));
+  const cidUf = [c.cidade,c.uf].filter(Boolean).join('/');
+  const endFull = [end,cidUf].filter(x=>x&&String(x).trim()).join(' · ');
+  const fone = fmtFone(c.whatsapp) || fmtFone(c.telefone);
+  const contato = [c.contato,c.cargo].filter(Boolean).join(' · ');
+  const linhas = [];
+  if(c.cnpj) linhas.push(`<div class="cd-ln">🏢 <span>${esc(c.cnpj)}</span></div>`);
+  if(endFull.trim()) linhas.push(`<div class="cd-ln">📍 <span>${esc(endFull)}</span></div>`);
+  if(contato) linhas.push(`<div class="cd-ln">👤 <span>${esc(contato)}</span></div>`);
+  if(fone) linhas.push(`<div class="cd-ln">📱 <span>${esc(fone)}</span></div>`);
+  if(!linhas.length) return `<div class="cli-dados" style="color:var(--text-4)">Sem dados cadastrais.</div>`;
+  return `<div class="cli-dados">${linhas.join('')}</div>`;
+}
 $('busca-cli').oninput = e=>{ BUSCA = norm(e.target.value); render(); };
 function render(){
   if(!SESSAO) return;
@@ -572,13 +723,14 @@ function render(){
 
     let body = '';
     if(aberto){
+      body = dadosClienteHtml(c); // dados do cliente sempre no topo
       if(!peds.length){
-        body = `<div style="color:var(--text-4);font-size:13px;padding:12px 0">Nenhum pedido pra este cliente.</div>`;
+        body += `<div style="color:var(--text-4);font-size:13px;padding:12px 0">Nenhum pedido pra este cliente.</div>`;
       } else {
         // agrupa por fase, mostra na ordem das fases
         const grupos = {};
         peds.forEach(x=>{ (grupos[x.fase]=grupos[x.fase]||[]).push(x.p); });
-        body = Object.keys(grupos)
+        body += Object.keys(grupos)
           .sort((a,b)=>FASES[a].ord-FASES[b].ord)
           .map(fk=>{
             const f = FASES[fk];
@@ -964,36 +1116,113 @@ window.excluirOrcamentoVend = async function(id){
     await ref.set({ solicitacoes: all, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() });
   } catch(e){ console.warn('Exclusão sincroniza depois:', e.message); }
 };
-// Compartilhar: monta layout limpo e abre a impressão (Salvar como PDF / compartilhar)
-window.compartilharOrcamento = function(id){
-  const s = MINHAS_SOLIC.find(x=>x.id===id);
-  if(!s || !s.orcamento){ toast('Orçamento ainda não está pronto','err'); return; }
-  const o = s.orcamento;
-  const dataBR = s.atualizadoEm ? new Date(s.atualizadoEm).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
-  const linhas = (o.itens||[]).map(it=>{
-    const med = [it.C,it.L,it.A].filter(Boolean).join(' × ');
+// ===== VER ORÇAMENTO (nota limpa, igual o sistema) =====
+let ORC_VER_ATUAL = null;
+
+// HTML da nota (mesmo visual do PCP)
+function notaOrcHTML(s, o){
+  const baseData = o.enviadoEm || s.atualizadoEm || s.criadoEm || Date.now();
+  const dataBR = new Date(baseData).toLocaleDateString('pt-BR');
+  const validBR = new Date(baseData + (+(o.validade)||5)*86400000).toLocaleDateString('pt-BR');
+  const linhas = (o.itens||[]).map((it,i)=>{
+    const ehCV = (it.estilo==='corte_vinco') || (!it.estilo && !(+it.A>0));
+    const med = ehCV ? [it.C,it.L].filter(Boolean).join('×') : [it.C,it.L,it.A].filter(Boolean).join('×');
+    const sub = [estiloLabelIt(it), med?med+' mm':'', it.chapaCod||'', it.onda||'', it.gramatura?it.gramatura+'g':'']
+      .filter(Boolean).join(' · ');
     return `<tr>
-      <td>${esc(it.ref||'Caixa')}<div class="sub">${[it.chapaCod,it.onda,it.gramatura?it.gramatura+'g':'',it.coluna?it.coluna+'kgf':''].filter(Boolean).join(' · ')}</div></td>
-      <td class="c">${esc(med)} mm</td>
-      <td class="c">${esc(String(it.qtd||''))}</td>
+      <td>${i+1}</td>
+      <td><div style="font-weight:600">${esc(it.ref||'Caixa')}</div><div style="font-size:11px;color:#777">${esc(sub)}</div></td>
+      <td class="r">${esc(String(it.qtd||''))}</td>
       <td class="r">${fmtBRL(it.precoUnit)}</td>
-      <td class="r">${fmtBRL(it.total)}</td>
+      <td class="r" style="font-weight:600">${fmtBRL(it.total)}</td>
     </tr>`;
   }).join('');
-  $('print-orc').innerHTML = `
-    <div class="po-head">
-      <div class="po-logo">JP EMBALAGENS</div>
-      <div class="po-meta">Orçamento Nº ${esc(o.numero||'—')}<br>${dataBR} · validade ${esc(String(o.validade||'—'))} dias</div>
-    </div>
-    <div class="po-cli"><b>Cliente:</b> ${esc(s.cliente||'—')}${s.cnpj?` &nbsp;·&nbsp; <b>CNPJ:</b> ${esc(s.cnpj)}`:''}</div>
-    <table class="po-tab">
-      <thead><tr><th>Caixa</th><th class="c">Medidas</th><th class="c">Qtd</th><th class="r">Unit.</th><th class="r">Total</th></tr></thead>
-      <tbody>${linhas}</tbody>
-    </table>
-    <div class="po-tot">TOTAL: <b>${fmtBRL(o.total)}</b></div>
-    ${s.obs?`<div class="po-obs"><b>Observação:</b> ${esc(s.obs)}</div>`:''}
-    <div class="po-rod">Vendedor: ${esc(s.vendedorNome||'—')} · JP Embalagens</div>`;
-  setTimeout(()=>window.print(), 60);
+  const subtotal = (o.itens||[]).reduce((a,it)=>a+(+it.total||0),0);
+  const valorIpi = o.semIpi ? 0 : subtotal*((+o.ipi||0)/100);
+  const total = (o.total!=null) ? +o.total : subtotal+valorIpi;
+  return `
+    <div class="nota">
+      <div class="nota-head">
+        <div>
+          <div class="nota-logo">JP EMBALAGENS</div>
+          <div class="nota-sub">Caixas de Papelão Corrugado · Boracéia/SP</div>
+        </div>
+        <div>
+          <div class="nota-num-lbl">Orçamento</div>
+          <div class="nota-num">Nº ${esc(o.numero||'—')}</div>
+        </div>
+      </div>
+      <div class="nota-info">
+        <div>
+          <div class="nota-cap">Cliente</div>
+          <div style="font-weight:600;font-size:15px">${esc(s.cliente||'—')}</div>
+          ${s.cnpj?`<div style="font-size:12px;color:#555;margin-top:2px">CNPJ: ${esc(s.cnpj)}</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <div class="nota-cap">Emissão / Validade</div>
+          <div>${dataBR} · válido até ${validBR}</div>
+        </div>
+      </div>
+      <table class="nota-tab">
+        <thead><tr>
+          <th style="width:26px">#</th><th>Descrição</th>
+          <th class="r" style="width:64px">Qtd</th>
+          <th class="r" style="width:84px">Unit.</th>
+          <th class="r" style="width:92px">Total</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+      <div class="nota-tot"><div class="nota-tot-in">
+        <div class="ln"><span>Subtotal</span><span>${fmtBRL(subtotal)}</span></div>
+        ${o.semIpi
+          ? `<div class="ln" style="color:#777"><span>IPI</span><span>sem IPI</span></div>`
+          : `<div class="ln"><span>IPI ${esc(String(o.ipi||0))}%</span><span>${fmtBRL(valorIpi)}</span></div>`}
+        ${o.icms!=null?`<div class="ln" style="color:#777;font-size:11px"><span>ICMS ${esc(String(o.icms))}%</span><span>incluso</span></div>`:''}
+        <div class="ln big"><span>TOTAL</span><span>${fmtBRL(total)}</span></div>
+      </div></div>
+      ${s.obs?`<div class="nota-cond"><b>Observação:</b> ${esc(s.obs)}</div>`:''}
+      <div class="nota-cond">Condições: ${esc(String(o.validade||5))} dias de validade · Forma de pagamento e prazo de entrega a combinar. Em caso de dúvidas, entre em contato.</div>
+    </div>`;
+}
+
+// Texto puro pra WhatsApp
+function notaOrcTexto(s, o){
+  const baseData = o.enviadoEm || s.atualizadoEm || s.criadoEm || Date.now();
+  const validBR = new Date(baseData + (+(o.validade)||5)*86400000).toLocaleDateString('pt-BR');
+  const itens = (o.itens||[]).map((it,i)=>{
+    const ehCV = (it.estilo==='corte_vinco') || (!it.estilo && !(+it.A>0));
+    const med = ehCV ? [it.C,it.L].filter(Boolean).join('×') : [it.C,it.L,it.A].filter(Boolean).join('×');
+    return `${i+1}. ${it.ref||'Caixa'}\n   ${estiloLabelIt(it)}${med?` · ${med} mm`:''}\n   ${it.qtd||0} un x ${fmtBRL(it.precoUnit)} = ${fmtBRL(it.total)}`;
+  }).join('\n\n');
+  return `*JP EMBALAGENS*\n_Orçamento Nº ${o.numero||'—'}_\n\n*Cliente:* ${s.cliente||'—'}${s.cnpj?`\n*CNPJ:* ${s.cnpj}`:''}\n*Válido até:* ${validBR}\n\n━━━━━━━━━━━━━━━━\n${itens}\n━━━━━━━━━━━━━━━━\n\n*TOTAL: ${fmtBRL(o.total)}*\n\n_Condições: ${o.validade||5} dias de validade · pagamento e prazo a combinar._`;
+}
+
+window.verOrcamentoVend = function(id){
+  const s = MINHAS_SOLIC.find(x=>x.id===id);
+  if(!s || !s.orcamento){ toast('Orçamento ainda não está pronto','err'); return; }
+  ORC_VER_ATUAL = s;
+  $('orc-ver-body').innerHTML = notaOrcHTML(s, s.orcamento);
+  $('modal-orc-ver').classList.add('ativo');
+};
+window.compartilharOrcamento = window.verOrcamentoVend; // compat
+$('orc-ver-fechar').onclick = ()=> $('modal-orc-ver').classList.remove('ativo');
+$('modal-orc-ver').onclick = e=>{ if(e.target.id==='modal-orc-ver') $('modal-orc-ver').classList.remove('ativo'); };
+$('orc-ver-imprimir').onclick = ()=>{
+  if(!ORC_VER_ATUAL) return;
+  const s = ORC_VER_ATUAL, o = s.orcamento;
+  $('print-orc').innerHTML = notaOrcHTML(s, o);
+  // Nome do arquivo do PDF: "Cliente - Orçamento Nº - dd/mm/aa"
+  const base = o.enviadoEm || s.atualizadoEm || s.criadoEm || Date.now();
+  const d = new Date(base);
+  const dd = String(d.getDate()).padStart(2,'0'), mm = String(d.getMonth()+1).padStart(2,'0'), aa = String(d.getFullYear()).slice(-2);
+  const tituloAntigo = document.title;
+  document.title = `${(s.cliente||'Cliente').trim()} - Orçamento ${o.numero||'—'} - ${dd}/${mm}/${aa}`;
+  setTimeout(()=>{ window.print(); setTimeout(()=>{ document.title = tituloAntigo; }, 800); }, 60);
+};
+$('orc-ver-whats').onclick = ()=>{
+  if(!ORC_VER_ATUAL) return;
+  const txt = encodeURIComponent(notaOrcTexto(ORC_VER_ATUAL, ORC_VER_ATUAL.orcamento));
+  window.open('https://wa.me/?text=' + txt, '_blank');
 };
 // reenvia solicitações que ficaram só no local (ex.: estava offline)
 function reenviarPendentes(){
@@ -1006,6 +1235,7 @@ function reenviarPendentes(){
 // ===== Boot =====
 montarNumpad();
 carregarVendedoresLogin();
+mostrarEtapaLogin();
 try {
   const s = JSON.parse(localStorage.getItem(PK_SESSAO)||'null');
   if(s && s.id){ SESSAO = s; entrarApp(); reenviarPendentes(); }

@@ -3865,9 +3865,16 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
         </div>
 
         <div class="form-grid-3" style="margin-top:10px">
-          <div><label>Comprimento (mm)</label><input autocomplete="off" type="number" id="orc-it-c" placeholder="C" oninput="orcRecalcItem()"></div>
-          <div><label>Largura (mm)</label><input autocomplete="off" type="number" id="orc-it-l" placeholder="L" oninput="orcRecalcItem()"></div>
+          <div><label id="orc-it-c-label">Comprimento (mm)</label><input autocomplete="off" type="number" id="orc-it-c" placeholder="C" oninput="orcRecalcItem()"></div>
+          <div><label id="orc-it-l-label">Largura (mm)</label><input autocomplete="off" type="number" id="orc-it-l" placeholder="L" oninput="orcRecalcItem()"></div>
           <div><label id="orc-it-a-label">Altura (mm)</label><input autocomplete="off" type="number" id="orc-it-a" placeholder="A" oninput="orcRecalcItem()"></div>
+        </div>
+
+        <!-- Corte e vinco: medidas da CHAPA (é o que faz a conta) -->
+        <div class="form-grid-3" style="margin-top:10px" id="orc-it-chapadim-box">
+          <div><label>📏 Comprimento da chapa (mm)</label><input autocomplete="off" type="number" id="orc-it-chapac" placeholder="C chapa" oninput="orcRecalcItem()"></div>
+          <div><label>📏 Largura da chapa (mm)</label><input autocomplete="off" type="number" id="orc-it-chapal" placeholder="L chapa" oninput="orcRecalcItem()"></div>
+          <div style="display:flex;align-items:flex-end"><span style="font-size:11px;color:var(--text-4)">O refile é somado automático no comprimento e na largura.</span></div>
         </div>
 
         <div class="form-grid-3" style="margin-top:10px">
@@ -11313,10 +11320,11 @@ async function salvarOndaConfig(){
 
 // ── MOTOR DE CÁLCULO DA CHAPA ──
 // Retorna { chapaC, chapaL, area } em mm e m²
-function orcCalcularChapa(estilo, C, L, A, refile){
+function orcCalcularChapa(estilo, C, L, A, refile, chapaCin, chapaLin){
   if(estilo === 'corte_vinco'){
-    const chapaC = C + (refile||0);
-    const chapaL = L + (refile||0);
+    // Medida seca da chapa + refile somado nas DUAS dimensões. C/L internos são só visuais.
+    const chapaC = (chapaCin||0) + (refile||0);
+    const chapaL = (chapaLin||0) + (refile||0);
     return { chapaC, chapaL, area: (chapaC * chapaL) / 1000000 };
   }
   // Maleta (RSC) — usa compensações da onda
@@ -11339,6 +11347,8 @@ function orcRecalcItem(){
   const C = +document.getElementById('orc-it-c').value || 0;
   const L = +document.getElementById('orc-it-l').value || 0;
   const A = +document.getElementById('orc-it-a').value || 0;
+  const chapaCin = +document.getElementById('orc-it-chapac').value || 0;
+  const chapaLin = +document.getElementById('orc-it-chapal').value || 0;
   const refile = +document.getElementById('orc-it-refile').value || 0;
   const rskg = +document.getElementById('orc-it-rskg').value || 0;
   const chapaId = document.getElementById('orc-it-chapa').value;
@@ -11359,13 +11369,24 @@ function orcRecalcItem(){
     }
   }
 
-  // Corte e vinco não usa altura; maleta usa
+  // Corte e vinco: medidas internas C×L×A são só visuais (vão pro cadastro da caixa)
+  // mas NÃO entram no cálculo. Quem faz a conta é a CHAPA (comprimento/largura) + refile.
   const ehCorteVinco = estilo === 'corte_vinco';
-  document.getElementById('orc-it-a-label').style.opacity = ehCorteVinco ? '.4' : '1';
-  document.getElementById('orc-it-a').disabled = ehCorteVinco;
+  // Altura fica sempre habilitada pra preencher (no corte e vinco é só informativa)
+  document.getElementById('orc-it-a-label').style.opacity = '1';
+  document.getElementById('orc-it-a').disabled = false;
   document.getElementById('orc-it-refile-box').style.display = ehCorteVinco ? 'block' : 'none';
+  const chapaDimBox = document.getElementById('orc-it-chapadim-box');
+  if(chapaDimBox) chapaDimBox.style.display = ehCorteVinco ? 'grid' : 'none';
+  // Marca as medidas internas como "visual" no corte e vinco
+  const lblC = document.getElementById('orc-it-c-label');
+  const lblL = document.getElementById('orc-it-l-label');
+  const lblA = document.getElementById('orc-it-a-label');
+  if(lblC) lblC.textContent = ehCorteVinco ? 'Comprimento interno (visual)' : 'Comprimento (mm)';
+  if(lblL) lblL.textContent = ehCorteVinco ? 'Largura interna (visual)' : 'Largura (mm)';
+  if(lblA) lblA.textContent = ehCorteVinco ? 'Altura interna (visual)' : 'Altura (mm)';
 
-  const r = orcCalcularChapa(estilo, C, L, A, refile);
+  const r = orcCalcularChapa(estilo, C, L, A, refile, chapaCin, chapaLin);
   const m2visual = rskg * (gram/1000);
   const peso = r.area * (gram/1000);
   const preco = peso * rskg;
@@ -11477,13 +11498,19 @@ function orcAdicionarItem(){
   const C = +document.getElementById('orc-it-c').value || 0;
   const L = +document.getElementById('orc-it-l').value || 0;
   const A = +document.getElementById('orc-it-a').value || 0;
+  const chapaCin = +document.getElementById('orc-it-chapac').value || 0;
+  const chapaLin = +document.getElementById('orc-it-chapal').value || 0;
   const refile = +document.getElementById('orc-it-refile').value || 0;
   const rskg = +document.getElementById('orc-it-rskg').value || 0;
   const chapaId = document.getElementById('orc-it-chapa').value;
   const chapa = (typeof CHAPAS !== 'undefined' ? CHAPAS : []).find(c => c.id === chapaId);
   if(!ref){ toast('Informe a referência do item','err'); return; }
-  if(!C || !L){ toast('Informe as medidas','err'); return; }
-  if(estilo !== 'corte_vinco' && !A){ toast('Informe a altura','err'); return; }
+  if(estilo === 'corte_vinco'){
+    if(!chapaCin || !chapaLin){ toast('Informe o comprimento e a largura da chapa','err'); return; }
+  } else {
+    if(!C || !L){ toast('Informe as medidas','err'); return; }
+    if(!A){ toast('Informe a altura','err'); return; }
+  }
   if(!chapa){ toast('Escolha a chapa','err'); return; }
   if(rskg <= 0){ toast('Informe o R$/kg','err'); return; }
 
@@ -11492,13 +11519,14 @@ function orcAdicionarItem(){
     if(!confirm(`⚠ R$/kg (${fmtBR3(rskg)}) está ABAIXO do nominal da chapa (${fmtBR3(chapa.precoKgNominal)}).\n\nContinuar mesmo assim?`)) return;
   }
 
-  const r = orcCalcularChapa(estilo, C, L, A, refile);
+  const r = orcCalcularChapa(estilo, C, L, A, refile, chapaCin, chapaLin);
   const gram = chapa.gramaturaTotal;
   const peso = r.area * (gram/1000);
   const preco = peso * rskg;
 
   const item = {
     estilo, ref, qtd, C, L, A, refile,
+    chapaCin, chapaLin,
     chapaId, chapaCod: chapa.codigo, onda: chapa.onda, gramatura: gram, coluna: chapa.colunaKgf || 0, rskg,
     rskgNominal: chapa.precoKgNominal || 0,
     chapaC: r.chapaC, chapaL: r.chapaL, area: r.area,
@@ -11519,6 +11547,8 @@ function orcAdicionarItem(){
   document.getElementById('orc-it-c').value = '';
   document.getElementById('orc-it-l').value = '';
   document.getElementById('orc-it-a').value = '';
+  document.getElementById('orc-it-chapac').value = '';
+  document.getElementById('orc-it-chapal').value = '';
   orcRenderItens();
   orcRecalcItem();
 }
@@ -11534,6 +11564,8 @@ function orcEditarItem(i){
   document.getElementById('orc-it-c').value = it.C;
   document.getElementById('orc-it-l').value = it.L;
   document.getElementById('orc-it-a').value = it.A || '';
+  document.getElementById('orc-it-chapac').value = it.chapaCin || '';
+  document.getElementById('orc-it-chapal').value = it.chapaLin || '';
   document.getElementById('orc-it-refile').value = it.refile || 30;
   document.getElementById('orc-it-chapa').value = it.chapaId || '';
   document.getElementById('orc-it-rskg').value = it.rskg || '';
@@ -11562,6 +11594,8 @@ function orcCancelarEdicaoItem(){
   document.getElementById('orc-it-c').value = '';
   document.getElementById('orc-it-l').value = '';
   document.getElementById('orc-it-a').value = '';
+  document.getElementById('orc-it-chapac').value = '';
+  document.getElementById('orc-it-chapal').value = '';
   orcRenderItens();
   orcRecalcItem();
   toast('Edição cancelada');
@@ -11584,7 +11618,7 @@ function orcRenderItens(){
     <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${bg};border:${borda};border-radius:8px;flex-wrap:wrap">
       <div style="flex:1;min-width:160px">
         <div style="font-weight:600;font-size:13px">${escapeHtml(it.ref)} ${emEdicao ? '<span style="color:#a78bfa;font-size:11px;margin-left:6px">✏️ editando...</span>' : ''}</div>
-        <div style="font-size:11px;color:var(--text-4)">${ESTILO_LABEL[it.estilo]} · ${it.C}×${it.L}${it.estilo!=='corte_vinco'?'×'+it.A:''} · ${escapeHtml(it.chapaCod || it.papelCod || '—')}${it.gramatura?` · ${it.gramatura}g`:''}${it.coluna?` · ${it.coluna}kgf`:''}</div>
+        <div style="font-size:11px;color:var(--text-4)">${ESTILO_LABEL[it.estilo]} · ${it.estilo==='corte_vinco'?`chapa ${it.chapaCin||0}×${it.chapaLin||0}`:`${it.C}×${it.L}×${it.A}`} · ${escapeHtml(it.chapaCod || it.papelCod || '—')}${it.gramatura?` · ${it.gramatura}g`:''}${it.coluna?` · ${it.coluna}kgf`:''}</div>
       </div>
       <div style="font-family:'JetBrains Mono';font-size:12px;text-align:right">
         <div>${fmt(it.qtd)} un × ${fmtBR3(it.precoUnit)}</div>
@@ -11721,6 +11755,7 @@ window.orcDaSolicitacao = function(solId){
 
   ORC_ITENS_ATUAL = [];
   let semChapa = 0;
+  let cvSemDim = 0; // corte e vinco que ainda precisa da medida da chapa
   caixasArr.forEach(cx => {
     // acha a chapa: por id, ou pelo código
     let chapa = (CHAPAS||[]).find(c => c.id === cx.chapaId);
@@ -11736,7 +11771,10 @@ window.orcDaSolicitacao = function(solId){
     else estilo = (A > 0 && ['B','C','BB','BC'].includes(onda)) ? ('maleta_' + onda) : 'corte_vinco';
     const rskg = chapa ? (chapa.precoKgNominal || 0) : 0;
     const gram = chapa ? (chapa.gramaturaTotal || 0) : 0;
-    const r = orcCalcularChapa(estilo, C, L, A, refile);
+    // Corte e vinco: vendedor não manda a medida da chapa, então fica 0 (PCP preenche).
+    const chapaCin = 0, chapaLin = 0;
+    if(estilo === 'corte_vinco') cvSemDim++;
+    const r = orcCalcularChapa(estilo, C, L, A, refile, chapaCin, chapaLin);
     const peso = r.area * (gram/1000);
     const preco = peso * rskg;
     if(!chapa) semChapa++;
@@ -11744,6 +11782,7 @@ window.orcDaSolicitacao = function(solId){
       estilo,
       ref: (cx.tipoCaixa || cx.descricao || 'Caixa'),
       qtd, C, L, A, refile,
+      chapaCin, chapaLin,
       chapaId: chapa ? chapa.id : '',
       chapaCod: chapa ? chapa.codigo : (cx.chapaCod||''),
       onda, gramatura: gram, coluna: chapa ? (chapa.colunaKgf||0) : (cx.coluna||0),
@@ -11760,6 +11799,7 @@ window.orcDaSolicitacao = function(solId){
   if(btnEnv) btnEnv.style.display = 'inline-flex';
 
   if(semChapa > 0) toast('⚠ ' + semChapa + ' caixa(s) sem chapa definida — escolha a chapa e o preço','err');
+  else if(cvSemDim > 0) toast('⚠ ' + cvSemDim + ' corte e vinco — preencha o comprimento e a largura da chapa','err');
   else toast('Itens carregados da solicitação. Confira o preço e envie.');
 };
 
@@ -11780,7 +11820,8 @@ async function salvarOrcamentoEnviarVendedor(){
       total: orc.total,
       icms: orc.icms, ipi: orc.ipi, semIpi: orc.semIpi,
       itens: (orc.itens||[]).map(it => ({
-        ref: it.ref, qtd: it.qtd, C: it.C, L: it.L, A: it.A,
+        ref: it.ref, qtd: it.qtd, estilo: it.estilo, C: it.C, L: it.L, A: it.A,
+        chapaCin: it.chapaCin, chapaLin: it.chapaLin,
         chapaCod: it.chapaCod, onda: it.onda, gramatura: it.gramatura, coluna: it.coluna,
         precoUnit: it.precoUnit, total: it.total
       })),
@@ -12007,10 +12048,20 @@ function abrirOrcVer(id){
   abrirModal('modal-orc-ver');
 }
 
+// Nome do arquivo do PDF: "Cliente - Orçamento Nº - dd/mm/aa"
+function orcNomeArquivo(o){
+  const d = new Date(o.criadoEm || Date.now());
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const aa = String(d.getFullYear()).slice(-2);
+  const cli = (o.cliente||'Cliente').trim();
+  return `${cli} - Orçamento ${o.numero||'—'} - ${dd}/${mm}/${aa}`;
+}
 function orcImprimir(){
   if(!ORC_VER_ATUAL) return;
+  const titulo = orcNomeArquivo(ORC_VER_ATUAL);
   const w = window.open('', '_blank', 'width=900,height=900');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Orçamento Nº ${ORC_VER_ATUAL.numero}</title>
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(titulo)}</title>
     <style>@media print { @page { size:A4; margin:14mm; } } body { margin:0; font-family:Arial,sans-serif; }</style>
     </head><body>${orcVerHTML(ORC_VER_ATUAL)}</body></html>`);
   w.document.close();
