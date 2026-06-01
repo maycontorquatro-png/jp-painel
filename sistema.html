@@ -4723,7 +4723,7 @@ function distribuirPedidos(){
 
   // Pedidos elegíveis pra programação
   const pedidos = STATE.pedidos
-    .filter(p => p.statusOp === 'programado')
+    .filter(p => ['programado','material_disponivel','em_producao','reprogramado'].includes(p.statusOp))
     .map(p => {
       const restanteQtd = Math.max(0, p.qtd - qtdProduzida(p));
       const noOperador = estaNoOperador(p);
@@ -4735,16 +4735,20 @@ function distribuirPedidos(){
     })
     .filter(p => p.restante > 0 || p.finalizando)
     .sort((a,b)=>{
-      // Se tem ordem personalizada, usa ela
+      // v2.10.0 — prioridade por status: em produção → material disponível → programado → reprogramado
+      const PRIO_ST = { em_producao:0, material_disponivel:1, programado:2, reprogramado:3 };
+      const sa = (PRIO_ST[a.statusOp] === undefined ? 9 : PRIO_ST[a.statusOp]);
+      const sb = (PRIO_ST[b.statusOp] === undefined ? 9 : PRIO_ST[b.statusOp]);
+      if(sa !== sb) return sa - sb;
+      // Dentro do mesmo status: ordem personalizada (se houver) como desempate
       if(STATE.ordemProducao && STATE.ordemProducao.length > 0){
         const ia = STATE.ordemProducao.indexOf(a.id);
         const ib = STATE.ordemProducao.indexOf(b.id);
-        // Pedidos na lista custom primeiro, depois os de fora (por data)
         if(ia >= 0 && ib >= 0) return ia - ib;
         if(ia >= 0) return -1;
         if(ib >= 0) return 1;
       }
-      // Padrão: mais urgente primeiro (data de entrega)
+      // E por fim, mais urgente primeiro (data de entrega)
       const da = diffDias(a.dataEntrega), db = diffDias(b.dataEntrega);
       if(da == null && db == null) return 0;
       if(da == null) return 1;
@@ -7826,7 +7830,7 @@ let reordOrdemTemp = []; // ordem temporária enquanto edita
 function abrirModalReordenar(){
   // Pegar pedidos programados (mesma lista do cronograma)
   const pedidos = STATE.pedidos
-    .filter(p => p.statusOp === 'programado')
+    .filter(p => ['programado','material_disponivel','em_producao','reprogramado'].includes(p.statusOp))
     .map(p => {
       const restante = Math.max(0, p.qtd - qtdProduzida(p));
       return {...p, restante, horasProducao: restante / p.cxh};
@@ -7853,7 +7857,7 @@ function renderListaReordenacao(pedidos){
   if(!pedidos) {
     // Pegar pedidos de novo
     pedidos = STATE.pedidos
-      .filter(p => p.statusOp === 'programado')
+      .filter(p => ['programado','material_disponivel','em_producao','reprogramado'].includes(p.statusOp))
       .map(p => { const r=Math.max(0,p.qtd-qtdProduzida(p)); return {...p, restante:r, horasProducao:r/p.cxh}; })
       .filter(p => p.restante > 0);
   }
@@ -8059,9 +8063,27 @@ function fmtTempoDesde(iso){
 }
 
 // v1.9.6 — Helper expandido: retorna fase + operador + qtd + tempo + motivo de parada
+// v2.10.0 — fase baseada no STATUS REAL do pedido (quando não tem produção ao vivo)
+function _fasePorStatus(pedidoId){
+  const ped = (STATE.pedidos||[]).find(x=>x.id===pedidoId);
+  const st = ped ? ped.statusOp : 'programado';
+  const M = {
+    em_producao:          {cor:'#639922', corFundo:'rgba(99,153,34,.12)',  corTexto:'#C0DD97', label:'Em produção'},
+    material_disponivel:  {cor:'#10b981', corFundo:'rgba(16,185,129,.12)', corTexto:'#6ee7b7', label:'Material disponível'},
+    programado:           {cor:'#378ADD', corFundo:'rgba(55,138,221,.12)', corTexto:'#85B7EB', label:'Programado'},
+    reprogramado:         {cor:'#EF9F27', corFundo:'rgba(239,159,39,.12)', corTexto:'#FAC775', label:'Reprogramado'},
+    esperando_programacao:{cor:'#5F5E5A', corFundo:'rgba(95,94,90,.12)',   corTexto:'#D3D1C7', label:'Esperando programação'},
+    bloqueado_financeiro: {cor:'#8b5cf6', corFundo:'rgba(139,92,246,.12)', corTexto:'#c4b5fd', label:'Bloq. financeiro'},
+    pronto:               {cor:'#f59e0b', corFundo:'rgba(245,158,11,.12)', corTexto:'#fcd34d', label:'Pronto'},
+    pronto_carregar:      {cor:'#14b8a6', corFundo:'rgba(20,184,166,.12)', corTexto:'#5eead4', label:'Pronto p/ carregar'},
+    carregado:            {cor:'#22c55e', corFundo:'rgba(34,197,94,.12)',  corTexto:'#86efac', label:'Carregado'},
+  };
+  const f = M[st] || M.programado;
+  return { fase: st, cor:f.cor, corFundo:f.corFundo, corTexto:f.corTexto, label:f.label, operador:null, maquina:null };
+}
 function getFaseDoPedido(pedidoId){
   const pg = STATE.progressosOperador?.[pedidoId];
-  if(!pg) return {fase: 'programado', cor: '#378ADD', corFundo: 'rgba(55,138,221,.12)', corTexto: '#85B7EB', label: 'Programado'};
+  if(!pg) return _fasePorStatus(pedidoId);
 
   const base = { operador: pg.operador || null, maquina: pg.maquina || null };
 
@@ -8113,7 +8135,7 @@ function getFaseDoPedido(pedidoId){
     desde: pg.ajusteInicioIso || pg.chapaIso,
     tempoDesde: fmtTempoDesde(pg.ajusteInicioIso || pg.chapaIso)
   };
-  return {...base, fase: 'programado', cor: '#378ADD', corFundo: 'rgba(55,138,221,.12)', corTexto: '#85B7EB', label: 'Programado'};
+  return Object.assign(_fasePorStatus(pedidoId), base);
 }
 
 // v1.9.6 — Helper pra render a badge HTML de fase
