@@ -1494,7 +1494,7 @@ function progBarrasOp(p){
 function processarPedidos(pedidos){
   // Guarda a lista CRUA (de todas as máquinas) pra poder refiltrar ao trocar de máquina
   STATE.pedidosBrutos = pedidos
-    .filter(p => p.statusOp === 'programado' || p.statusOp === 'material_disponivel' || p.statusOp === 'em_producao')
+    .filter(p => p.statusOp === 'material_disponivel' || p.statusOp === 'em_producao') // v2.8.0 — só material disponível + em produção
     .map(p => ({
       id: p.id,
       cliente: p.cliente,
@@ -4388,7 +4388,7 @@ function escutarPedidosFirebase(){
         const idsAntigos = new Set(STATE.pedidos.map(p => p.id));
 
         STATE.pedidosBrutos = pedidos
-          .filter(p => p.statusOp === 'programado' || p.statusOp === 'material_disponivel' || p.statusOp === 'em_producao')
+          .filter(p => p.statusOp === 'material_disponivel' || p.statusOp === 'em_producao') // v2.8.0 — só material disponível + em produção
           .map(p => ({
             id: p.id, cliente: p.cliente, codigo: p.codigo,
             qtd: p.qtd, cxh: p.cxh, dataEntrega: p.dataEntrega,

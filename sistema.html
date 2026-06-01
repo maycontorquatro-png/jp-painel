@@ -8998,15 +8998,10 @@ async function publicarPedidosParaOperador(){
   try {
     const pedidosLimpos = STATE.pedidos
       .filter(p => {
-        // Status precisa ser programado, material_disponivel ou em_producao
-        // (material_disponivel = chapa pronta → tem que ir pro operador automaticamente)
-        if(p.statusOp !== 'programado' && p.statusOp !== 'material_disponivel' && p.statusOp !== 'em_producao') return false;
-        // 🔒 NOVA REGRA: só vai pro operador se a CHAPA tá pronta OU já tem produção em andamento
-        // Critério: chapasDisponiveis > 0 OU já tem registros OU etapas iniciadas
-        const temChapa = (p.chapasDisponiveis||0) > 0;
-        const temRegistros = (p.registros||[]).length > 0;
-        const temEtapas = p.etapas && Object.values(p.etapas).some(e => e && e.status);
-        return temChapa || temRegistros || temEtapas;
+        // v2.8.0 — só vai pro operador o que está com MATERIAL DISPONÍVEL (chapa pronta)
+        // ou já EM PRODUÇÃO. Programado, reprogramado e os que aguardam decisão do PCP
+        // (produção parcial / reprogramar) ficam SÓ no PCP.
+        return p.statusOp === 'material_disponivel' || p.statusOp === 'em_producao';
       })
       .map(p => {
         // Compactar — só campos essenciais pro operador
