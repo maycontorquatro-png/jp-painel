@@ -1525,6 +1525,11 @@ function filtrarPedidosDaMaquina(){
     const etapa = etapaParaMaquina(p, maquina);
     return etapa !== null;
   });
+  // v2.8.0 — mantém a "foto" do pedido aberto atualizada (ex: Slotter finalizou/liberou → reflete na Coladeira)
+  if(STATE.pedidoAtivo){
+    const f = (STATE.pedidosBrutos || []).find(x => x.id === STATE.pedidoAtivo.id);
+    if(f) STATE.pedidoAtivo = f;
+  }
   return STATE.pedidos;
 }
 
@@ -2793,7 +2798,9 @@ function iniciarPaletizacao(cxPalete){
   if(!p) return;
   PAL.cxPalete = cxPalete;
   // USAR QTD REAL DA SLOTTER/CORTE se disponível, senão usa qtd do pedido
-  const qtdSlotter = p.etapas?.impressora?.qtd || p.qtd;
+  // v2.8.0 — base dos paletes: qtd finalizada do Slotter → senão o liberado parcial → senão a qtd do pedido
+  const _imp = p.etapas?.impressora || {};
+  const qtdSlotter = (+_imp.qtd) || (+_imp.qtdLiberada) || p.qtd;
   PAL.totalPrevisto = qtdSlotter;
   PAL.qtdOriginalPedido = p.qtd;
   PAL.ativo = true;
@@ -2970,11 +2977,12 @@ document.getElementById('pal-cx-palete').oninput = ()=>{
   const p = STATE.pedidoAtivo;
   const prev = document.getElementById('pal-preview');
   if(!cx||!p){prev.textContent='';return}
-  // Usar qtd real da slotter se disponível
-  const qtdBase = p.etapas?.impressora?.qtd || p.qtd;
+  // Usar qtd real da slotter se disponível; senão o liberado parcial; senão a qtd do pedido (v2.8.0)
+  const _imp2 = p.etapas?.impressora || {};
+  const qtdBase = (+_imp2.qtd) || (+_imp2.qtdLiberada) || p.qtd;
   const total = Math.ceil(qtdBase/cx);
   const saldo = qtdBase - cx*(total-1);
-  const origem = p.etapas?.impressora?.qtd ? `<div style="font-size:11px;color:#6ee7b7;margin-bottom:4px">✓ Usando qtd real da Slotter: <strong>${fmt(qtdBase)}</strong> cx</div>` : `<div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Qtd do pedido: ${fmt(qtdBase)} cx</div>`;
+  const origem = (+_imp2.qtd) ? `<div style="font-size:11px;color:#6ee7b7;margin-bottom:4px">✓ Usando qtd real da Slotter: <strong>${fmt(qtdBase)}</strong> cx</div>` : ((+_imp2.qtdLiberada) ? `<div style="font-size:11px;color:#c4b5fd;margin-bottom:4px">📤 Liberado pelo Slotter: <strong>${fmt(qtdBase)}</strong> cx</div>` : `<div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Qtd do pedido: ${fmt(qtdBase)} cx</div>`);
   prev.innerHTML = `${origem}<strong style="color:var(--amber-2);font-size:18px">${total} paletes</strong><br>${total-1}× ${fmt(cx)}cx + 1× ${fmt(saldo)}cx saldo`;
 };
 
@@ -3034,7 +3042,7 @@ function iniciarBtnProdNormal(p){
     if(pg.paletes && pg.paletes.length > 0){
       PAL.paletes = pg.paletes;
       PAL.cxPalete = pg.cxPalete||0;
-      PAL.totalPrevisto = pg.qtdSlotter || p.etapas?.impressora?.qtd || p.qtd;
+      PAL.totalPrevisto = pg.qtdSlotter || (+p.etapas?.impressora?.qtd) || (+p.etapas?.impressora?.qtdLiberada) || p.qtd;
       PAL.ativo = true;
       iniciarProducaoReal();
       renderPainelPaletes();
