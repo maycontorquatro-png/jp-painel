@@ -297,7 +297,7 @@ input[type=time],input[type=date],input[type=number]{color-scheme:dark;font-fami
         <input type="file" id="file-pedidos" accept=".json" style="display:none">
       </label>
       <button class="btn btn-success" id="btn-enviar">📤 Enviar registros (<span id="qtd-pendente">0</span>)</button>
-      <button class="btn" id="btn-manutencao" style="grid-column:1/-1;background:linear-gradient(135deg,#f59e0b,#ea580c);color:#0f172a;border:none;font-weight:700;font-size:13px">🔧 Manutenção</button>
+      <button class="btn" id="btn-manutencao" style="background:linear-gradient(135deg,#f59e0b,#ea580c);color:#0f172a;border:none;font-weight:700;font-size:13px">🔧 Manutenção</button>
     </div>
   </div>
 
@@ -1356,6 +1356,7 @@ function renderAbasMaquinas(){
     STATE.sessao.maquina = novaMaq;
     save(PK_SESSAO, STATE.sessao);
     document.getElementById('user-nome').textContent = `${STATE.sessao.operador} · ${novaMaq}`;
+    filtrarPedidosDaMaquina();   // refiltra na hora, sem recarregar do Firebase
     renderAbasMaquinas();
     renderListaPedidos();
     toast(`🔄 Operando agora: ${novaMaq}`, 'ok');
@@ -1426,8 +1427,8 @@ function etapaAnteriorConcluida(p){
 }
 
 function processarPedidos(pedidos){
-  const maquina = STATE.sessao?.maquina || '';
-  return pedidos
+  // Guarda a lista CRUA (de todas as máquinas) pra poder refiltrar ao trocar de máquina
+  STATE.pedidosBrutos = pedidos
     .filter(p => p.statusOp === 'programado' || p.statusOp === 'material_disponivel' || p.statusOp === 'em_producao')
     .map(p => ({
       id: p.id,
@@ -1443,13 +1444,21 @@ function processarPedidos(pedidos){
       numPed: p._numPed || (p.obs ? (p.obs.match(/Ped\s+(\d+)/)||[])[1] : '') || '',
       jaProduzido: (p.registros||[]).reduce((s,r)=>s+(+r.qtd||0),0),
       chapasDisponiveis: p.chapasDisponiveis||null
-    }))
-    .filter(p => {
-      // Se TODAS as etapas do roteiro foram concluídas → some de todas as máquinas
-      if(todasEtapasConcluidas(p)) return false;
-      const etapa = etapaParaMaquina(p, maquina);
-      return etapa !== null;
-    });
+    }));
+  return filtrarPedidosDaMaquina();
+}
+
+// Filtra a lista crua só pros pedidos da máquina atual.
+// Assim dá pra trocar de máquina na hora, sem recarregar do Firebase.
+function filtrarPedidosDaMaquina(){
+  const maquina = STATE.sessao?.maquina || '';
+  STATE.pedidos = (STATE.pedidosBrutos || []).filter(p => {
+    // Se TODAS as etapas do roteiro foram concluídas → some de todas as máquinas
+    if(todasEtapasConcluidas(p)) return false;
+    const etapa = etapaParaMaquina(p, maquina);
+    return etapa !== null;
+  });
+  return STATE.pedidos;
 }
 
 document.getElementById('file-pedidos').onchange = (e)=>{
@@ -4206,7 +4215,7 @@ function escutarPedidosFirebase(){
         const maquina = STATE.sessao?.maquina || '';
         const idsAntigos = new Set(STATE.pedidos.map(p => p.id));
 
-        STATE.pedidos = pedidos
+        STATE.pedidosBrutos = pedidos
           .filter(p => p.statusOp === 'programado' || p.statusOp === 'material_disponivel' || p.statusOp === 'em_producao')
           .map(p => ({
             id: p.id, cliente: p.cliente, codigo: p.codigo,
@@ -4218,12 +4227,8 @@ function escutarPedidosFirebase(){
             numPed: p._numPed || '',
             jaProduzido: (p.registros||[]).reduce((s,r)=>s+(+r.qtd||0),0),
             chapasDisponiveis: p.chapasDisponiveis||null
-          }))
-          .filter(p => {
-            if(todasEtapasConcluidas(p)) return false;
-            const etapa = etapaParaMaquina(p, maquina);
-            return etapa !== null;
-          });
+          }));
+        filtrarPedidosDaMaquina();
 
         // 🔔 NOTIFICAR sobre pedidos novos (que não estavam antes)
         if(idsAntigos.size > 0){ // não notifica na primeira carga
