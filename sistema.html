@@ -16256,6 +16256,32 @@ function coresQuadradinhos(c){
   return q || '—';
 }
 
+// v2.8.0 — popup estilizado de confirmação de exclusão de caixa (evita apagar sem querer)
+function confirmarExclusaoCaixa(c, onSim){
+  let ov = document.getElementById('modal-del-caixa');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'modal-del-caixa';
+    ov.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99999;align-items:center;justify-content:center;padding:16px';
+    ov.innerHTML = `<div style="background:var(--bg-1);border:1px solid var(--line);border-radius:16px;max-width:380px;width:100%;padding:22px;text-align:center">
+      <div style="font-size:40px;margin-bottom:8px">🗑️</div>
+      <div style="font-family:'Oswald';font-size:18px;font-weight:700;color:var(--text-1);margin-bottom:6px">Excluir esta caixa?</div>
+      <div id="del-caixa-info" style="font-size:13px;color:var(--text-3);margin-bottom:18px"></div>
+      <div style="display:flex;gap:10px">
+        <button id="del-caixa-cancel" class="btn btn-ghost" style="flex:1">Cancelar</button>
+        <button id="del-caixa-ok" class="btn" style="flex:1;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;font-weight:700">Excluir</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click', e => { if(e.target === ov) ov.style.display = 'none'; });
+  }
+  document.getElementById('del-caixa-info').innerHTML =
+    `<strong style="color:var(--amber-2);font-family:'JetBrains Mono'">${escapeHtml(c.codigo||'')}</strong> — ${escapeHtml(c.cliente||'')}<br><span style="font-size:11px;color:var(--text-4)">Essa ação não pode ser desfeita.</span>`;
+  document.getElementById('del-caixa-cancel').onclick = ()=> ov.style.display = 'none';
+  document.getElementById('del-caixa-ok').onclick = ()=>{ ov.style.display = 'none'; onSim(); };
+  ov.style.display = 'flex';
+}
+
 function renderCaixas(){
   const tbody = document.getElementById('cx-cad-tbody');
   const busca = document.getElementById('cx-cad-busca')?.value.toLowerCase() || '';
@@ -16332,14 +16358,15 @@ function renderCaixas(){
     const c = CAIXAS.find(x => x.id === b.dataset.cxEdit);
     if(c) abrirModalNovaCaixa(c);
   });
-  tbody.querySelectorAll('[data-cx-del]').forEach(b => b.onclick = async ()=>{
+  tbody.querySelectorAll('[data-cx-del]').forEach(b => b.onclick = ()=>{
     const c = CAIXAS.find(x => x.id === b.dataset.cxDel);
     if(!c) return;
-    if(!confirm(`Excluir cadastro da caixa "${c.codigo}" - ${c.cliente}?`)) return;
-    CAIXAS = CAIXAS.filter(x => x.id !== c.id);
-    await salvarCaixas();
-    renderCaixas();
-    toast('Caixa excluída');
+    confirmarExclusaoCaixa(c, async ()=>{
+      CAIXAS = CAIXAS.filter(x => x.id !== c.id);
+      await salvarCaixas();
+      renderCaixas();
+      toast('Caixa excluída');
+    });
   });
 }
 
