@@ -344,7 +344,7 @@ body {
   </div>
 
   <div class="footer">
-    <span class="versao">v2.8.0</span> ·
+    <span class="versao">v2.9.0</span> ·
     <span class="status"><span class="dot"></span>Servidor online</span>
   </div>
 </div>
@@ -403,5 +403,27 @@ function cancelarRedirect() {
 })();
 </script>
 
+<!-- v2.9.0 - Camada 3: aviso de status de conexao (offline/online) -->
+<script>
+(function(){
+  var bar, hideT;
+  function ensureBar(){
+    if(bar) return bar;
+    bar = document.createElement('div');
+    bar.id = 'jp-net-bar';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;text-align:center;font:600 12px/1.45 Inter,Outfit,Arial,sans-serif;padding:7px 12px;transform:translateY(-110%);transition:transform .35s ease;box-shadow:0 2px 12px rgba(0,0,0,.35);letter-spacing:.2px';
+    (document.body||document.documentElement).appendChild(bar);
+    return bar;
+  }
+  function show(html,bg,color){ var b=ensureBar(); clearTimeout(hideT); b.innerHTML=html; b.style.background=bg; b.style.color=color; b.style.transform='translateY(0)'; }
+  function hide(){ if(bar){ clearTimeout(hideT); bar.style.transform='translateY(-110%)'; } }
+  function offline(){ show('\u{1F7E1} Sem internet — salvando no aparelho, sincroniza quando voltar','#f59e0b','#1a1200'); }
+  function online(){ show('✅ Reconectado, sincronizando...','linear-gradient(90deg,#00668E,#009FE3)','#fff'); hideT=setTimeout(hide,2600); }
+  function init(){ if(navigator.onLine===false) offline(); }
+  window.addEventListener('offline', offline);
+  window.addEventListener('online', online);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
 </body>
 </html>

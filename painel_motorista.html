@@ -101,7 +101,7 @@ h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
     <div class="login-jp"><svg viewBox="0 0 100 100"><text x="50" y="65" font-family="Oswald,sans-serif" font-size="42" font-weight="700" text-anchor="middle" fill="#009FE3" letter-spacing="-2">JP</text></svg></div>
     <h1>JP EMBALAGENS</h1>
     <div class="login-cx">CAIXAS DE PAPELÃO</div>
-    <p>App do Motorista · <span class="badge">v2.8.0</span></p>
+    <p>App do Motorista · <span class="badge">v2.9.0</span></p>
   </div>
   <div class="login-body" id="login-lista-step">
     <div style="font-size:12px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">Quem é você?</div>
@@ -161,7 +161,7 @@ const firebaseConfig = {
   appId: "1:319945051169:web:c951da8d6c34de351c2760"
 };
 let db = null;
-try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); } catch(e){ console.error('Firebase:', e); }
+try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); try { db.enablePersistence({ synchronizeTabs: true }).catch(function(){}); } catch(_e){} } catch(e){ console.error('Firebase:', e); }
 
 // ===== Helpers =====
 const $ = id => document.getElementById(id);
@@ -506,6 +506,28 @@ try {
   const s = JSON.parse(localStorage.getItem(PK_SESSAO)||'null');
   if(s && s.id){ SESSAO = s; entrarApp(); }
 } catch(e){}
+</script>
+<!-- v2.9.0 - Camada 3: aviso de status de conexao (offline/online) -->
+<script>
+(function(){
+  var bar, hideT;
+  function ensureBar(){
+    if(bar) return bar;
+    bar = document.createElement('div');
+    bar.id = 'jp-net-bar';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;text-align:center;font:600 12px/1.45 Inter,Outfit,Arial,sans-serif;padding:7px 12px;transform:translateY(-110%);transition:transform .35s ease;box-shadow:0 2px 12px rgba(0,0,0,.35);letter-spacing:.2px';
+    (document.body||document.documentElement).appendChild(bar);
+    return bar;
+  }
+  function show(html,bg,color){ var b=ensureBar(); clearTimeout(hideT); b.innerHTML=html; b.style.background=bg; b.style.color=color; b.style.transform='translateY(0)'; }
+  function hide(){ if(bar){ clearTimeout(hideT); bar.style.transform='translateY(-110%)'; } }
+  function offline(){ show('\u{1F7E1} Sem internet — salvando no aparelho, sincroniza quando voltar','#f59e0b','#1a1200'); }
+  function online(){ show('✅ Reconectado, sincronizando...','linear-gradient(90deg,#00668E,#009FE3)','#fff'); hideT=setTimeout(hide,2600); }
+  function init(){ if(navigator.onLine===false) offline(); }
+  window.addEventListener('offline', offline);
+  window.addEventListener('online', online);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
 </script>
 </body>
 </html>
