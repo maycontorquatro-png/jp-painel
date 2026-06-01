@@ -13,6 +13,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" crossorigin="anonymous"></script>
 <style>
 :root{--bg-0:#0f172a;--bg-1:#1e293b;--bg-2:#243044;--bg-3:#2d3a52;--line:#334155;--line-soft:#1f2a3d;--text:#f1f5f9;--text-2:#cbd5e1;--text-3:#94a3b8;--text-4:#64748b;--amber:#009FE3;--amber-2:#33B5E8;--orange:#00668E;--red:#ef4444;--red-2:#dc2626;--green:#10b981;--green-2:#22c55e;--blue:#3b82f6;--violet:#8b5cf6;--pink:#ec4899;--teal:#14b8a6;--cyan:#06b6d4;--stone:#a8a29e;--shadow:0 10px 30px rgba(0,0,0,.35);--radius:14px;--radius-sm:8px}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -8865,6 +8866,7 @@ const FB_CONFIG = {
 };
 
 let db = null;
+let storage = null; // v2.8.0 — Firebase Storage (arte da caixa: PDF/imagem viram URL, não base64)
 let fbPendentes = []; // registros do operador aguardando importação
 let fbUnsubscribe = null;
 
@@ -8882,6 +8884,7 @@ function initFirebase(){
     if(!firebase) return;
     firebase.initializeApp(FB_CONFIG);
     db = firebase.firestore();
+    try { if(firebase.storage) storage = firebase.storage(); } catch(e){ console.warn('Storage indisponível:', e.message); }
     console.log('✓ Firebase conectado');
 
     // Carregar dados do Firebase (sempre o mais recente)
@@ -14414,7 +14417,32 @@ function carregarCaixas(){
   try { CAIXAS = JSON.parse(localStorage.getItem(PK_CAIXAS)||'[]'); }
   catch(e){ CAIXAS = []; }
 }
+// v2.8.0 — sobe a arte (PDF/imagem) pro Storage e guarda só a URL no doc (evita estourar 1MB do Firestore)
+async function migrarArtesParaStorage(){
+  if(typeof storage === 'undefined' || !storage) return;
+  for(const c of CAIXAS){
+    if(!c || !c.id) continue;
+    try {
+      if(c.arteImg && typeof c.arteImg === 'string' && c.arteImg.startsWith('data:')){
+        const ref = storage.ref(`caixas/${c.id}/arte_img`);
+        await ref.putString(c.arteImg, 'data_url');
+        c.arteImg = await ref.getDownloadURL();
+      }
+      if(c.artePdf && typeof c.artePdf === 'string' && c.artePdf.startsWith('data:')){
+        const ref = storage.ref(`caixas/${c.id}/arte_pdf`);
+        await ref.putString(c.artePdf, 'data_url');
+        c.artePdf = await ref.getDownloadURL();
+      }
+      if(c.paletImg && typeof c.paletImg === 'string' && c.paletImg.startsWith('data:')){
+        const ref = storage.ref(`caixas/${c.id}/palet_img`);
+        await ref.putString(c.paletImg, 'data_url');
+        c.paletImg = await ref.getDownloadURL();
+      }
+    } catch(e){ console.warn('Erro ao subir arte da caixa', c.codigo, e.message); }
+  }
+}
 async function salvarCaixas(){
+  await migrarArtesParaStorage(); // v2.8.0 — arte base64 → Storage (mantém só URL no documento)
   localStorage.setItem(PK_CAIXAS, JSON.stringify(CAIXAS));
   if(typeof db !== 'undefined' && db){
     try {
