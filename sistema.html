@@ -552,6 +552,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
   <button class="tab" data-view="cad-vendedores" data-mod="cadastros" style="display:none">🤝 Vendedores</button>
   <button class="tab" data-view="cad-caixas" data-mod="cadastros" style="display:none">📦 Caixas</button>
   <button class="tab" data-view="cad-papeis" data-mod="cadastros" style="display:none">📄 Papéis</button>
+  <button class="tab" data-view="cad-cores" data-mod="cadastros" style="display:none">🎨 Cores</button>
   <button class="tab" data-view="cad-chapas" data-mod="cadastros" style="display:none">📐 Chapas</button>
   <button class="tab" data-view="cad-operadores" data-mod="cadastros" style="display:none">👷 Operadores</button>
   <button class="tab" data-view="cad-laudistas" data-mod="cadastros" style="display:none">🔬 Laudistas</button>
@@ -1635,6 +1636,55 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
       </thead>
       <tbody id="pp-tbody"></tbody>
     </table>
+  </div>
+</div>
+
+<!-- ========== VIEW: CADASTRO DE CORES (v2.8.0) ========== -->
+<div class="view" id="view-cad-cores">
+  <div class="imp-info">🎨 Cadastre as cores de impressão. Depois, no cadastro da caixa, é só <strong>selecionar</strong> (sem digitar).</div>
+  <div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input type="text" id="cor-busca" placeholder="🔍 Buscar cor..." style="flex:1;min-width:200px;padding:8px 12px;background:var(--bg-3);border:1px solid var(--line-soft);border-radius:6px;color:var(--text-2)">
+    <button class="btn btn-primary" id="btn-nova-cor">+ Nova Cor</button>
+  </div>
+  <div style="margin-top:14px;background:var(--bg-2);border:1px solid var(--line-soft);border-radius:10px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead style="background:var(--bg-3)">
+        <tr style="border-bottom:1px solid var(--line-soft)">
+          <th style="padding:10px 14px;text-align:left;color:var(--text-3);font-size:11px;letter-spacing:1px;text-transform:uppercase">Cor</th>
+          <th style="padding:10px 14px;text-align:left;color:var(--text-3);font-size:11px;letter-spacing:1px;text-transform:uppercase">Nome</th>
+          <th style="padding:10px 14px;text-align:left;color:var(--text-3);font-size:11px;letter-spacing:1px;text-transform:uppercase">Hex</th>
+          <th style="padding:10px 14px;text-align:center;color:var(--text-3);font-size:11px;letter-spacing:1px;text-transform:uppercase">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="cor-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL: NOVA/EDITAR COR -->
+<div class="modal-bg" id="modal-cor">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-cor-title">🎨 Nova Cor</div>
+      <button class="modal-close" data-close="modal-cor">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div>
+          <label>Cor</label>
+          <input type="color" id="cor-hex" value="#009FE3" style="width:60px;height:48px;border:none;padding:0;cursor:pointer;border-radius:8px">
+        </div>
+        <div style="flex:1">
+          <label>Nome <span style="color:#ef4444">*</span></label>
+          <input type="text" id="cor-nome" placeholder="Ex: Vermelho DH 04, Pantone 286 C" maxlength="40">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="btn" id="btn-excluir-cor" style="display:none;background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none">🗑</button>
+        <button class="btn btn-ghost" data-close="modal-cor" style="flex:1">Cancelar</button>
+        <button class="btn btn-primary" id="btn-salvar-cor" style="flex:1">Salvar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -4192,7 +4242,7 @@ function statusVisualCard(p){
 const MODULOS = {
   producao: ['dashboard','relatorio','pcp','estoque','chat'],
   comercial: ['orcamentos','orc-solicitacoes','orc-onda-config'],
-  cadastros: ['cad-clientes','cad-vendedores','cad-caixas','cad-papeis','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores'],
+  cadastros: ['cad-clientes','cad-vendedores','cad-caixas','cad-papeis','cad-cores','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores'],
   expedicao: ['entregas','escalas','entregas-vivo','exp-carregar','exp-historico'],
   analises: ['graficos','produtividade','abc','eficiencia','perdas','velocidades','ocorrencias','manutencoes']
 };
@@ -4242,6 +4292,7 @@ document.querySelectorAll('[data-view]').forEach(b=>{b.onclick=()=>{
   }
   // 🆕 Renderizar Papéis ao entrar na view
   if(STATE.view === 'cad-papeis' && typeof renderPapeis === 'function') renderPapeis();
+  if(STATE.view === 'cad-cores' && typeof renderCores === 'function') renderCores();
   // v2.0.5 — Renderizar vendedores/comissões ao entrar na view
   if(STATE.view === 'cad-vendedores' && typeof renderVendedores === 'function') renderVendedores();
   // v2.1.0 — Renderizar chat ao entrar na view
@@ -10953,13 +11004,13 @@ setTimeout(()=>{
 // Definição das permissões por perfil
 const PERMS = {
   admin: {
-    tabs: ['dashboard','relatorio','pcp','entregas','estoque','chat','orcamentos','orc-solicitacoes','orc-onda-config','escalas','graficos','produtividade','abc','eficiencia','perdas','velocidades','cad-clientes','cad-vendedores','cad-caixas','cad-papeis','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores','exp-carregar','entregas-vivo','manutencoes','exp-historico'],
+    tabs: ['dashboard','relatorio','pcp','entregas','estoque','chat','orcamentos','orc-solicitacoes','orc-onda-config','escalas','graficos','produtividade','abc','eficiencia','perdas','velocidades','cad-clientes','cad-vendedores','cad-caixas','cad-papeis','cad-cores','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores','exp-carregar','entregas-vivo','manutencoes','exp-historico'],
     importar: true, novoPedido: true, editarPedido: true, excluirPedido: true,
     mudarStatus: true, exportarOperador: true, config: true, backup: true,
     setupClientes: true, reordenar: true, etiquetas: true, usuarios: true
   },
   pcp: {
-    tabs: ['dashboard','relatorio','pcp','entregas','estoque','orcamentos','orc-solicitacoes','orc-onda-config','escalas','graficos','produtividade','abc','eficiencia','perdas','velocidades','cad-clientes','cad-caixas','cad-papeis','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores','exp-carregar','entregas-vivo','manutencoes','exp-historico'],
+    tabs: ['dashboard','relatorio','pcp','entregas','estoque','orcamentos','orc-solicitacoes','orc-onda-config','escalas','graficos','produtividade','abc','eficiencia','perdas','velocidades','cad-clientes','cad-caixas','cad-papeis','cad-cores','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores','exp-carregar','entregas-vivo','manutencoes','exp-historico'],
     importar: true, novoPedido: false, editarPedido: false, excluirPedido: false,
     mudarStatus: true, exportarOperador: false, config: false, backup: false,
     setupClientes: false, reordenar: true, etiquetas: false, usuarios: false
@@ -11541,6 +11592,85 @@ setTimeout(() => {
   if(btnExcluir) btnExcluir.onclick = excluirPapel;
   if(busca) busca.oninput = renderPapeis;
   if(filtro) filtro.onchange = renderPapeis;
+}, 500);
+
+// ============================================
+// 🆕 MÓDULO: CADASTRO DE CORES (v2.8.0)
+// ============================================
+const PK_CORES = 'jp_cores_v1';
+let CORES = [];
+let COR_EDITANDO = null;
+function carregarCores(){ try{ CORES = JSON.parse(localStorage.getItem(PK_CORES)||'[]'); }catch(e){ CORES = []; } }
+async function salvarCores(){
+  localStorage.setItem(PK_CORES, JSON.stringify(CORES));
+  if(typeof db !== 'undefined' && db){
+    try{ await db.collection('jp_sistema').doc('cores').set({ cores: CORES, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp() }); }
+    catch(e){ console.warn('Erro ao salvar cores:', e.message); }
+  }
+}
+carregarCores();
+setTimeout(()=>{
+  if(typeof db === 'undefined' || !db) return;
+  db.collection('jp_sistema').doc('cores').onSnapshot(d=>{
+    if(d.exists){ CORES = d.data().cores || []; localStorage.setItem(PK_CORES, JSON.stringify(CORES));
+      if(STATE.view === 'cad-cores') renderCores();
+    }
+  }, e=>console.warn('Erro sync cores:', e.message));
+}, 1500);
+
+function renderCores(){
+  const busca = (document.getElementById('cor-busca')?.value||'').toLowerCase();
+  let lista = CORES.slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  if(busca) lista = lista.filter(c => (c.nome||'').toLowerCase().includes(busca));
+  const tbody = document.getElementById('cor-tbody'); if(!tbody) return;
+  if(lista.length === 0){
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:30px;text-align:center;color:var(--text-4)">${CORES.length===0?'🎨 Nenhuma cor cadastrada. Clique em "+ Nova Cor".':'Nenhuma cor encontrada.'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(c => `
+    <tr style="border-bottom:1px solid var(--line-soft)">
+      <td style="padding:10px 14px"><span style="display:inline-block;width:26px;height:26px;border-radius:6px;background:${escapeHtml(c.hex||'#000')};border:1px solid rgba(255,255,255,.25);vertical-align:middle"></span></td>
+      <td style="padding:10px 14px;font-weight:600;color:var(--text-1)">${escapeHtml(c.nome||'—')}</td>
+      <td style="padding:10px 14px;font-family:'JetBrains Mono';color:var(--text-3)">${escapeHtml(c.hex||'')}</td>
+      <td style="padding:10px 14px;text-align:center"><button class="icon-btn" data-cor-edit="${c.id}" title="Editar">✎</button></td>
+    </tr>`).join('');
+  tbody.querySelectorAll('[data-cor-edit]').forEach(b=> b.onclick = ()=> abrirModalCor(b.dataset.corEdit));
+}
+function abrirModalCor(id){
+  COR_EDITANDO = id ? CORES.find(c=>c.id===id) : null;
+  document.getElementById('modal-cor-title').textContent = COR_EDITANDO ? '🎨 Editar Cor' : '🎨 Nova Cor';
+  document.getElementById('cor-hex').value = COR_EDITANDO?.hex || '#009FE3';
+  document.getElementById('cor-nome').value = COR_EDITANDO?.nome || '';
+  document.getElementById('btn-excluir-cor').style.display = COR_EDITANDO ? 'inline-flex' : 'none';
+  abrirModal('modal-cor');
+}
+async function salvarCor(){
+  const nome = document.getElementById('cor-nome').value.trim();
+  const hex = document.getElementById('cor-hex').value;
+  if(!nome){ toast('Informe o nome da cor','err'); return; }
+  const dup = CORES.find(c => (c.nome||'').toLowerCase() === nome.toLowerCase() && c.id !== COR_EDITANDO?.id);
+  if(dup){ toast(`Cor "${nome}" já existe!`,'err'); return; }
+  if(COR_EDITANDO){ Object.assign(COR_EDITANDO, {nome, hex, atualizadoEm: Date.now()}); toast('✓ Cor atualizada'); }
+  else { CORES.push({ id: 'cor_'+Date.now()+'_'+Math.random().toString(36).slice(2,7), nome, hex, criadoEm: Date.now() }); toast('✓ Cor cadastrada'); }
+  await salvarCores();
+  fecharModal('modal-cor');
+  renderCores();
+}
+async function excluirCor(){
+  if(!COR_EDITANDO) return;
+  if(!confirm(`Excluir a cor "${COR_EDITANDO.nome}"?`)) return;
+  CORES = CORES.filter(c => c.id !== COR_EDITANDO.id);
+  await salvarCores();
+  fecharModal('modal-cor');
+  renderCores();
+  toast('Cor excluída');
+}
+setTimeout(()=>{
+  const bN=document.getElementById('btn-nova-cor'), bS=document.getElementById('btn-salvar-cor'), bE=document.getElementById('btn-excluir-cor'), bu=document.getElementById('cor-busca');
+  if(bN) bN.onclick = ()=> abrirModalCor(null);
+  if(bS) bS.onclick = salvarCor;
+  if(bE) bE.onclick = excluirCor;
+  if(bu) bu.oninput = renderCores;
 }, 500);
 
 // ============================================
@@ -15171,12 +15301,13 @@ function abrirModalNovaCaixa(caixa){
 
           <!-- 6. IMPRESSÃO - CORES -->
           <div style="margin-top:14px;padding:14px;background:var(--bg-2);border:1px solid var(--line);border-radius:10px">
-            <div style="font-family:'Oswald';font-size:13px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px">🎨 6 · Impressão · até 4 cores</div>
+            <div style="font-family:'Oswald';font-size:13px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px">🎨 6 · Impressão · até 4 cores</div>
+            <div style="font-size:11px;color:var(--text-4);margin-bottom:10px">Selecione as cores do <strong>Cadastro de Cores</strong> (Cadastros → 🎨 Cores).</div>
             <div class="form-grid-2">
-              <div style="display:flex;gap:6px;align-items:center"><input type="color" id="cx-cor1-rgb" value="#000000" style="width:36px;height:36px;border:none;padding:0;cursor:pointer;flex-shrink:0;border-radius:6px"><input type="text" id="cx-cor1-nome" placeholder="Cor 1 (ex: Preto, Pantone 286 C)" style="flex:1"></div>
-              <div style="display:flex;gap:6px;align-items:center"><input type="color" id="cx-cor2-rgb" value="#ffffff" style="width:36px;height:36px;border:none;padding:0;cursor:pointer;flex-shrink:0;border-radius:6px"><input type="text" id="cx-cor2-nome" placeholder="Cor 2" style="flex:1"></div>
-              <div style="display:flex;gap:6px;align-items:center"><input type="color" id="cx-cor3-rgb" value="#ffffff" style="width:36px;height:36px;border:none;padding:0;cursor:pointer;flex-shrink:0;border-radius:6px"><input type="text" id="cx-cor3-nome" placeholder="Cor 3" style="flex:1"></div>
-              <div style="display:flex;gap:6px;align-items:center"><input type="color" id="cx-cor4-rgb" value="#ffffff" style="width:36px;height:36px;border:none;padding:0;cursor:pointer;flex-shrink:0;border-radius:6px"><input type="text" id="cx-cor4-nome" placeholder="Cor 4" style="flex:1"></div>
+              <div style="display:flex;gap:8px;align-items:center"><span id="cx-cor1-sw" style="width:30px;height:30px;border-radius:6px;background:transparent;border:1px solid var(--line);flex-shrink:0"></span><select id="cx-cor1-sel" style="flex:1"><option value="">— Cor 1 —</option></select><input type="hidden" id="cx-cor1-rgb"><input type="hidden" id="cx-cor1-nome"></div>
+              <div style="display:flex;gap:8px;align-items:center"><span id="cx-cor2-sw" style="width:30px;height:30px;border-radius:6px;background:transparent;border:1px solid var(--line);flex-shrink:0"></span><select id="cx-cor2-sel" style="flex:1"><option value="">— Cor 2 —</option></select><input type="hidden" id="cx-cor2-rgb"><input type="hidden" id="cx-cor2-nome"></div>
+              <div style="display:flex;gap:8px;align-items:center"><span id="cx-cor3-sw" style="width:30px;height:30px;border-radius:6px;background:transparent;border:1px solid var(--line);flex-shrink:0"></span><select id="cx-cor3-sel" style="flex:1"><option value="">— Cor 3 —</option></select><input type="hidden" id="cx-cor3-rgb"><input type="hidden" id="cx-cor3-nome"></div>
+              <div style="display:flex;gap:8px;align-items:center"><span id="cx-cor4-sw" style="width:30px;height:30px;border-radius:6px;background:transparent;border:1px solid var(--line);flex-shrink:0"></span><select id="cx-cor4-sel" style="flex:1"><option value="">— Cor 4 —</option></select><input type="hidden" id="cx-cor4-rgb"><input type="hidden" id="cx-cor4-nome"></div>
             </div>
           </div>
 
@@ -15371,6 +15502,9 @@ function abrirModalNovaCaixa(caixa){
     // v2.8.0 — também alterna os blocos (corte e vinco × compensações de dobra)
     const elModelo = document.getElementById('cx-modelo');
     if(elModelo) elModelo.addEventListener('change', cxToggleEstilo);
+
+    // v2.8.0 — seletores de cor (puxam do Cadastro de Cores)
+    ['1','2','3','4'].forEach(n=>{ const s=document.getElementById('cx-cor'+n+'-sel'); if(s) s.onchange=()=>cxCorSelChange(n); });
 
     // 🆕 Chapa selecionada → puxa onda, gramatura e coluna automaticamente
     const elChapaSel = document.getElementById('cx-chapa-sel');
@@ -15629,6 +15763,35 @@ function recalcularComposicao(){
   recalcularCaixa();
 }
 
+// v2.8.0 — seletores de cor do cadastro de caixa (puxam do Cadastro de Cores)
+function cxAtualizarSwatchCor(n){
+  const sw = document.getElementById('cx-cor'+n+'-sw');
+  if(sw) sw.style.background = document.getElementById('cx-cor'+n+'-rgb').value || 'transparent';
+}
+function cxPopularCoresSelects(){
+  ['1','2','3','4'].forEach(n=>{
+    const sel = document.getElementById('cx-cor'+n+'-sel'); if(!sel) return;
+    const nomeAtual = (document.getElementById('cx-cor'+n+'-nome').value||'').trim();
+    let achou = false, opts = `<option value="">— Cor ${n} —</option>`;
+    (typeof CORES !== 'undefined' ? CORES : []).forEach(cor=>{
+      const sl = (nomeAtual && cor.nome === nomeAtual);
+      if(sl) achou = true;
+      opts += `<option value="${escapeHtml(cor.id)}" data-hex="${escapeHtml(cor.hex||'')}" data-nome="${escapeHtml(cor.nome||'')}" ${sl?'selected':''}>${escapeHtml(cor.nome||'')}</option>`;
+    });
+    if(nomeAtual && !achou){
+      opts += `<option value="__legado" data-hex="${escapeHtml(document.getElementById('cx-cor'+n+'-rgb').value||'')}" data-nome="${escapeHtml(nomeAtual)}" selected>${escapeHtml(nomeAtual)} (não cadastrada)</option>`;
+    }
+    sel.innerHTML = opts;
+    cxAtualizarSwatchCor(n);
+  });
+}
+function cxCorSelChange(n){
+  const sel = document.getElementById('cx-cor'+n+'-sel');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('cx-cor'+n+'-rgb').value = opt ? (opt.dataset.hex||'') : '';
+  document.getElementById('cx-cor'+n+'-nome').value = opt ? (opt.dataset.nome||'') : '';
+  cxAtualizarSwatchCor(n);
+}
 // v2.8.0 — alterna entre o esquema de Corte e Vinco e o de dobra (compensações)
 function cxToggleEstilo(){
   const cv = (document.getElementById('cx-modelo')?.value||'') === 'corte_vinco';
@@ -16078,14 +16241,16 @@ function preencherFormCaixa(c){
   document.getElementById('cx-chapa-c').value = c.chapaC || '';
   document.getElementById('cx-chapa-l').value = c.chapaL || '';
   // Cores
-  document.getElementById('cx-cor1-rgb').value = c.cor1Rgb || '#000000';
+  // v2.8.0 — cores: guarda valores nos hidden e popula os seletores (do Cadastro de Cores)
+  document.getElementById('cx-cor1-rgb').value = c.cor1Rgb || '';
   document.getElementById('cx-cor1-nome').value = c.cor1Nome || '';
-  document.getElementById('cx-cor2-rgb').value = c.cor2Rgb || '#ffffff';
+  document.getElementById('cx-cor2-rgb').value = c.cor2Rgb || '';
   document.getElementById('cx-cor2-nome').value = c.cor2Nome || '';
-  document.getElementById('cx-cor3-rgb').value = c.cor3Rgb || '#ffffff';
+  document.getElementById('cx-cor3-rgb').value = c.cor3Rgb || '';
   document.getElementById('cx-cor3-nome').value = c.cor3Nome || '';
-  document.getElementById('cx-cor4-rgb').value = c.cor4Rgb || '#ffffff';
+  document.getElementById('cx-cor4-rgb').value = c.cor4Rgb || '';
   document.getElementById('cx-cor4-nome').value = c.cor4Nome || '';
+  cxPopularCoresSelects();
   // Clichê/faca
   document.getElementById('cx-cliche').value = c.cliche || '';
   document.getElementById('cx-faca').value = c.faca || '';
