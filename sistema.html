@@ -5052,6 +5052,14 @@ function relAtrasoTxtCls(p){
   return {txt:`${dias}d`,cls:'ok'};
 }
 function relStatusOpts(p){return STATUS_ORDER.map(s=>`<option value="${s}" ${p.statusOp===s?'selected':''}>${STATUS_LABELS[s]}</option>`).join('')}
+// v2.8.0 — número do pedido; se for reprogramado, mostra "Reprogramado" embaixo (fonte Oswald)
+function numPedCelula(p){
+  const num = numPedDe(p) || '—';
+  if(p.reprogramado){
+    return `${escapeHtml(num.replace(/-R$/,''))}<div style="font-family:'Oswald';font-size:9px;font-weight:600;letter-spacing:.5px;color:#fdba74;text-transform:uppercase;margin-top:2px">🔄 Reprogramado</div>`;
+  }
+  return escapeHtml(num);
+}
 // HTML da nota de chapas (igual ao de antes)
 function relChapasNota(p,chapas){
   if(chapas>0 && chapas<p.qtd){
@@ -5160,7 +5168,7 @@ function renderRelatorio(){
     const a=relAtrasoTxtCls(p);
     const dataFmt=p.dataEntrega?p.dataEntrega.split('-').reverse().join('/'):'—';
     return `<tr class="${atras?'is-atrasado':''} ${p.statusOp==='entregue'?'is-entregue':''}" data-pid="${p.id}">
-      <td class="col-num" style="font-family:'JetBrains Mono';color:#33B5E8;font-weight:700">${escapeHtml(numPedDe(p)||'—')}</td>
+      <td class="col-num" style="font-family:'JetBrains Mono';color:#33B5E8;font-weight:700">${numPedCelula(p)}</td>
       <td class="col-cliente">${escapeHtml(p.cliente)}</td>
       <td class="col-codigo">${escapeHtml(p.codigo||'—')}</td>
       <td class="col-num">${fmt(p.qtd)}</td>
@@ -5261,7 +5269,7 @@ function renderPCP(){
     const fotoCell=fotoUrl?`<img class="pcp-foto" src="${escapeHtml(fotoUrl)}" data-foto="${escapeHtml(fotoUrl)}" alt="modelo" title="Clique pra ver grande">`:`<div class="pcp-foto-vazia" title="Sem foto cadastrada">📦</div>`;
     return `<tr class="${atras?'is-atrasado':''} ${p.statusOp==='entregue'?'is-entregue':''}" data-pid="${p.id}">
       <td>${fotoCell}</td>
-      <td class="col-num" style="font-family:'JetBrains Mono';color:#33B5E8;font-weight:700">${escapeHtml(numPedDe(p)||'—')}</td>
+      <td class="col-num" style="font-family:'JetBrains Mono';color:#33B5E8;font-weight:700">${numPedCelula(p)}</td>
       <td class="col-cliente">${escapeHtml(p.cliente)}</td>
       <td class="col-codigo">${escapeHtml(p.codigo||'—')}</td>
       <td><select class="status-select s-${p.statusOp}" data-stsel="${p.id}">${relStatusOpts(p)}</select></td>
