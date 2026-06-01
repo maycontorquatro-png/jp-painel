@@ -1895,8 +1895,20 @@ function buscarCaixaCadastrada(codigo, cliente, caixaId){
     c = CAIXAS_CAD.find(x => cod.startsWith(norm(x.codigo)) && norm(x.cliente) === cli && norm(x.codigo).length >= 2);
     if(c){ console.log('[buscarCaixa] ✓ fuzzy invertido'); return c; }
   }
+  // 5° v2.8.0 — MESMO CLIENTE + MESMO NÚMERO (ex: "KININO 09" ↔ "CX 09", "NACON CX 021" ↔ "CX 21")
+  // Trava de segurança: só casa se houver EXATAMENTE UMA caixa do cliente com aquele número (senão é ambíguo).
+  const numsP = numerosDoCodigo(codigo);
+  if(numsP.length && cli){
+    const cands = CAIXAS_CAD.filter(x => norm(x.cliente) === cli && numerosDoCodigo(x.codigo).some(n => numsP.includes(n)));
+    if(cands.length === 1){ console.log('[buscarCaixa] ✓ match cliente+número (único)'); return cands[0]; }
+    if(cands.length > 1) console.log('[buscarCaixa] ⚠ vários candidatos por número, não arrisco', cands.map(x=>x.codigo));
+  }
   console.log(`[buscarCaixa] ✗ NÃO ACHEI! Caixas disponíveis:`, (CAIXAS_CAD||[]).map(c => ({codigo:c.codigo, cliente:c.cliente, norm: `cod="${norm(c.codigo)}" cli="${norm(c.cliente)}"`})));
   return null;
+}
+// v2.8.0 — números do código (zero à esquerda removido): "CX 021" → ["21"], "19 KETCHUP 900ML" → ["19","900"]
+function numerosDoCodigo(s){
+  return ((s||'').match(/\d+/g) || []).map(n => n.replace(/^0+/,'')).filter(Boolean);
 }
 
 // 🆕 Calcular medidas a partir da caixa cadastrada

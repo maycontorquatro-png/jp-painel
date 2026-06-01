@@ -12398,19 +12398,39 @@ async function orcParaPedido(id){
   if(!confirm(`Gerar ${o.itens.length} caixa(s) cadastrada(s) e pedido(s) pro cliente ${o.cliente}?`)) return;
 
   let criados = 0;
+  // v2.8.0 — garante o cliente no cadastro (orçamento → cliente entra junto)
+  if(o.cliente && typeof CLIENTES !== 'undefined' && Array.isArray(CLIENTES)){
+    const jaTemCli = CLIENTES.find(c => (c.nome||'').trim().toLowerCase() === o.cliente.trim().toLowerCase());
+    if(!jaTemCli){
+      CLIENTES.push({
+        id: (typeof gerarIdCli === 'function' ? gerarIdCli() : 'cli_'+Date.now().toString(36)),
+        nome: o.cliente, razaoSocial:'', cnpj:'', ie:'', email:'',
+        origemOrcamento: o.numero, criadoEm: Date.now()
+      });
+      if(typeof salvarClientes === 'function') await salvarClientes();
+    }
+  }
   for(const it of o.itens){
     // 1. Criar/atualizar caixa no cadastro
     const norm = s => (s||'').toString().trim().toLowerCase();
     let caixa = (typeof CAIXAS !== 'undefined' ? CAIXAS : []).find(c =>
       norm(c.codigo) === norm(it.ref) && norm(c.cliente) === norm(o.cliente));
     if(!caixa && typeof CAIXAS !== 'undefined'){
+      const ehCV = it.estilo === 'corte_vinco';
       caixa = {
         id: 'cx_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
         codigo: it.ref, cliente: o.cliente,
         intC: it.C, intL: it.L, intA: it.A,
         chapaC: it.chapaC, chapaL: it.chapaL,
         chapaId: it.chapaId, chapaCod: it.chapaCod, onda: it.onda,
+        coluna: it.coluna || 0,
         gramatura: it.gramatura, rsKg: it.rskg, valorUnitCalc: it.precoUnit,
+        // v2.8.0 — guarda o esquema corte e vinco pra abrir certo no cadastro
+        modelo: ehCV ? 'corte_vinco' : '',
+        estilo: it.estilo || (ehCV ? 'corte_vinco' : 'dobra'),
+        refile: ehCV ? (it.refile || 0) : 0,
+        chapaCin: ehCV ? (it.chapaCin || 0) : 0,
+        chapaLin: ehCV ? (it.chapaLin || 0) : 0,
         origemOrcamento: o.numero,
         criadoEm: Date.now()
       };
@@ -15001,6 +15021,7 @@ function abrirModalNovaCaixa(caixa){
                   <option value="feco">📂 FECO (Fundo e Encaixe)</option>
                   <option value="bandeja">🍽️ Bandeja</option>
                   <option value="autopiso">🔒 Auto-piso</option>
+                  <option value="corte_vinco">✂️ Corte e Vinco</option>
                   <option value="outro">Outro</option>
                 </select>
               </div>
@@ -15045,8 +15066,19 @@ function abrirModalNovaCaixa(caixa){
             <input type="hidden" id="cx-coluna">
           </div>
 
+          <!-- 4b. CORTE E VINCO (só quando modelo = corte_vinco) -->
+          <div id="cx-cv-bloco" style="display:none;margin-top:14px;padding:14px;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.3);border-radius:10px">
+            <div style="font-family:'Oswald';font-size:13px;color:#c4b5fd;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px">✂️ Corte e Vinco — medida da chapa</div>
+            <div style="font-size:11px;color:var(--text-4);margin-bottom:10px">O refile é somado automático no comprimento e na largura (igual o orçamento).</div>
+            <div class="form-grid-3">
+              <div><label>Comprimento da chapa (mm)</label><input id="cx-cv-chapac" type="number" inputmode="numeric" placeholder="C chapa"></div>
+              <div><label>Largura da chapa (mm)</label><input id="cx-cv-chapal" type="number" inputmode="numeric" placeholder="L chapa"></div>
+              <div><label>Refile (mm)</label><input id="cx-cv-refile" type="number" inputmode="numeric" placeholder="30" value="30"></div>
+            </div>
+          </div>
+
           <!-- 4. COMPENSAÇÕES E CHAPA -->
-          <div style="margin-top:14px;padding:14px;background:var(--bg-2);border:1px solid var(--line);border-radius:10px">
+          <div id="cx-comp-bloco" style="margin-top:14px;padding:14px;background:var(--bg-2);border:1px solid var(--line);border-radius:10px">
             <div style="font-family:'Oswald';font-size:13px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px">📏 4 · Compensações por aba</div>
             <div style="font-size:11px;color:var(--text-4);margin-bottom:10px">Quanto somar em cada aba pra dar a medida final do vinco · padrões carregam automático mas você pode editar</div>
             <div class="form-grid-3">
@@ -15293,8 +15325,8 @@ function abrirModalNovaCaixa(caixa){
     // Eventos do modal
     m.querySelectorAll('[data-close]').forEach(b => b.onclick = ()=> fecharModal('modal-caixa'));
 
-    // Recalcular automaticamente em qualquer mudança técnica
-    const recalcIds = ['cx-int-c','cx-int-l','cx-int-a','cx-comp-l1','cx-comp-c1','cx-comp-l2','cx-comp-c2','cx-comp-alt','cx-lap','cx-rs-kg'];
+    // Recalcular automaticamente em qualquer mudança técnica (inclui campos do corte e vinco)
+    const recalcIds = ['cx-int-c','cx-int-l','cx-int-a','cx-comp-l1','cx-comp-c1','cx-comp-l2','cx-comp-c2','cx-comp-alt','cx-lap','cx-rs-kg','cx-cv-chapac','cx-cv-chapal','cx-cv-refile'];
     recalcIds.forEach(id => { const el = document.getElementById(id); if(el) el.oninput = recalcularCaixa; });
 
     // v2.8.0 — digitar o VALOR recalcula o R$/kg (bidirecional, sem loop)
@@ -15308,8 +15340,9 @@ function abrirModalNovaCaixa(caixa){
     };
 
     // v1.9.6 — Recalcular quando muda o modelo (afeta a fórmula do riscador)
+    // v2.8.0 — também alterna os blocos (corte e vinco × compensações de dobra)
     const elModelo = document.getElementById('cx-modelo');
-    if(elModelo) elModelo.addEventListener('change', recalcularCaixa);
+    if(elModelo) elModelo.addEventListener('change', cxToggleEstilo);
 
     // 🆕 Chapa selecionada → puxa onda, gramatura e coluna automaticamente
     const elChapaSel = document.getElementById('cx-chapa-sel');
@@ -15568,6 +15601,15 @@ function recalcularComposicao(){
   recalcularCaixa();
 }
 
+// v2.8.0 — alterna entre o esquema de Corte e Vinco e o de dobra (compensações)
+function cxToggleEstilo(){
+  const cv = (document.getElementById('cx-modelo')?.value||'') === 'corte_vinco';
+  const bloco = document.getElementById('cx-cv-bloco');
+  const comp = document.getElementById('cx-comp-bloco');
+  if(bloco) bloco.style.display = cv ? '' : 'none';
+  if(comp)  comp.style.display  = cv ? 'none' : '';
+  recalcularCaixa();
+}
 function recalcularCaixa(){
   const c = +document.getElementById('cx-int-c')?.value || 0;
   const l = +document.getElementById('cx-int-l')?.value || 0;
@@ -15599,6 +15641,28 @@ function recalcularCaixa(){
   if(dOnda) dOnda.textContent = _onda || '—';
   if(dGram) dGram.textContent = Math.round(gramTotal) + ' g/m²';
   if(dCol)  dCol.textContent  = _col ? (_col + ' kgf') : '—';
+
+  // v2.8.0 — CORTE E VINCO: chapa = medida + refile (mesmo cálculo do orçamento)
+  if((document.getElementById('cx-modelo')?.value||'') === 'corte_vinco'){
+    const refile = +document.getElementById('cx-cv-refile')?.value || 0;
+    const cvC = +document.getElementById('cx-cv-chapac')?.value || 0;
+    const cvL = +document.getElementById('cx-cv-chapal')?.value || 0;
+    const chapaC = cvC > 0 ? cvC + refile : 0;
+    const chapaL = cvL > 0 ? cvL + refile : 0;
+    const elChC = document.getElementById('cx-chapa-c'); if(elChC) elChC.value = chapaC || '';
+    const elChL = document.getElementById('cx-chapa-l'); if(elChL) elChL.value = chapaL || '';
+    const area = (chapaC * chapaL) / 1000000;
+    const elArea = document.getElementById('cx-area-calc'); if(elArea) elArea.textContent = area.toFixed(4).replace('.',',') + ' m²';
+    let pesoKg = 0;
+    if(gramTotal > 0 && area > 0){
+      pesoKg = (area * gramTotal) / 1000;
+      const elPeso = document.getElementById('cx-peso-calc'); if(elPeso) elPeso.textContent = pesoKg.toFixed(3).replace('.',',') + ' kg';
+    }
+    CX_PESO_KG = pesoKg;
+    const rsKg = +document.getElementById('cx-rs-kg')?.value || 0;
+    const elValor = document.getElementById('cx-valor-calc'); if(elValor && rsKg > 0 && pesoKg > 0) elValor.value = (pesoKg * rsKg).toFixed(3);
+    return;
+  }
 
   // Medidas da impressora: lap × L+l1 × C+c1 × L+l2 × C+c2 × sobra
   const sobra = 15;
@@ -15979,6 +16043,10 @@ function preencherFormCaixa(c){
   document.getElementById('cx-comp-c2').value = c.compC2 || '';
   document.getElementById('cx-comp-alt').value = c.compAlt || '';
   document.getElementById('cx-lap').value = c.lap || '';
+  // v2.8.0 — corte e vinco
+  document.getElementById('cx-cv-chapac').value = c.chapaCin || '';
+  document.getElementById('cx-cv-chapal').value = c.chapaLin || '';
+  document.getElementById('cx-cv-refile').value = (c.refile!=null && c.refile!=='') ? c.refile : 30;
   document.getElementById('cx-chapa-c').value = c.chapaC || '';
   document.getElementById('cx-chapa-l').value = c.chapaL || '';
   // Cores
@@ -16060,8 +16128,8 @@ function preencherFormCaixa(c){
   aplicarPadraoOnda();
   // Renderizar composição (caixas antigas sem chapa)
   renderComposicaoLinhas();
-  // Recalcular
-  recalcularCaixa();
+  // Recalcular (cxToggleEstilo mostra o bloco certo: corte e vinco × dobra)
+  cxToggleEstilo();
   // 🆕 Atualizar sugestões de velocidade baseadas no histórico
   setTimeout(atualizarSugestoesVelocidade, 100);
   // 🆕 Mostrar histórico de alterações
@@ -16146,6 +16214,11 @@ async function salvarCaixaModal(){
     codInterno: document.getElementById('cx-cod-interno').value.trim(),
     pedidoCompra: document.getElementById('cx-pedido-compra').value.trim(),
     modelo: document.getElementById('cx-modelo').value,
+    // v2.8.0 — corte e vinco (mesmo esquema do orçamento)
+    estilo: (document.getElementById('cx-modelo').value === 'corte_vinco') ? 'corte_vinco' : 'dobra',
+    refile: +document.getElementById('cx-cv-refile').value || 0,
+    chapaCin: +document.getElementById('cx-cv-chapac').value || 0,
+    chapaLin: +document.getElementById('cx-cv-chapal').value || 0,
     intC: +document.getElementById('cx-int-c').value || 0,
     intL: +document.getElementById('cx-int-l').value || 0,
     intA: +document.getElementById('cx-int-a').value || 0,
