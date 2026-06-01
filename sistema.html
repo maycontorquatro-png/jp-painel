@@ -8872,7 +8872,7 @@ async function salvarPedidosFirebase(pedidos){
       });
       localStorage.setItem('jp_last_save', Date.now().toString());
 
-      // 2. Publicar AUTOMATICAMENTE pro operador (só os programados/em_produção)
+      // 2. Publicar AUTOMATICAMENTE pro operador (programados / material disponível / em produção)
       await publicarPedidosParaOperador();
 
       atualizarStatusSinc('✓ Sincronizado · Operador atualizado', '#6ee7b7');
@@ -8978,8 +8978,9 @@ async function publicarPedidosParaOperador(){
   try {
     const pedidosLimpos = STATE.pedidos
       .filter(p => {
-        // Status precisa ser programado ou em_producao
-        if(p.statusOp !== 'programado' && p.statusOp !== 'em_producao') return false;
+        // Status precisa ser programado, material_disponivel ou em_producao
+        // (material_disponivel = chapa pronta → tem que ir pro operador automaticamente)
+        if(p.statusOp !== 'programado' && p.statusOp !== 'material_disponivel' && p.statusOp !== 'em_producao') return false;
         // 🔒 NOVA REGRA: só vai pro operador se a CHAPA tá pronta OU já tem produção em andamento
         // Critério: chapasDisponiveis > 0 OU já tem registros OU etapas iniciadas
         const temChapa = (p.chapasDisponiveis||0) > 0;
