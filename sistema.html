@@ -2494,6 +2494,8 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
           <input type="hidden" id="f-codigo">
         </div>
       </div>
+      <!-- v2.8.0 — aviso quando a caixa já tem saldo no Estoque PA -->
+      <div id="f-estoque-aviso" style="display:none;margin-bottom:10px;padding:10px 12px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);border-radius:8px;font-size:12px;color:#fcd34d;line-height:1.5"></div>
       <div class="form-grid-3">
         <div><label>Quantidade (caixas)</label><input type="number" id="f-qtd" placeholder="10000" min="1"></div>
         <div>
@@ -5373,7 +5375,7 @@ function abrirModalPedido(pid, prefill){
   atualizarHintsCadastro();
   document.getElementById('btn-excluir').style.display=p?'inline-flex':'none';
   if(p){document.getElementById('btn-excluir').onclick=()=>{if(confirm(`Excluir pedido de ${p.cliente}?`)){STATE.pedidos=STATE.pedidos.filter(x=>x.id!==p.id);saveStorage(PK_PEDIDOS,STATE.pedidos);fecharModal('modal-pedido');toast('Pedido excluído');renderAll()}}}
-  toggleReproWrap();recalcPedidoModal();abrirModal('modal-pedido');
+  toggleReproWrap();recalcPedidoModal();atualizarAvisoEstoquePedido();abrirModal('modal-pedido');
 }
 
 // v1.9.6 — Funções auxiliares pra vinculação cliente/caixa no cadastro de pedido
@@ -5467,7 +5469,33 @@ document.getElementById('f-cliente').addEventListener('input', (e) => {
   document.getElementById('f-caixa-id').value = '';
   document.getElementById('f-codigo').value = '';
   atualizarHintsCadastro();
+  atualizarAvisoEstoquePedido(); // v2.8.0
 });
+// v2.8.0 — saldo da caixa no Estoque PA (mesmo código + cliente)
+function estoqueDaCaixa(codigo, cliente){
+  if(typeof STATE_EST === 'undefined' || !STATE_EST || !Array.isArray(STATE_EST.caixas)) return {qtd:0, lotes:0};
+  const cod = (codigo||'').trim().toLowerCase(), cli = (cliente||'').trim().toLowerCase();
+  if(!cod) return {qtd:0, lotes:0};
+  const itens = STATE_EST.caixas.filter(c =>
+    (c.codigo||'').trim().toLowerCase() === cod &&
+    (!cli || (c.cliente||'').trim().toLowerCase() === cli)
+  );
+  return { qtd: itens.reduce((s,c)=>s+(+c.qtd||0),0), lotes: itens.length };
+}
+// v2.8.0 — mostra/esconde o aviso de saldo em estoque no modal do pedido
+function atualizarAvisoEstoquePedido(){
+  const el = document.getElementById('f-estoque-aviso'); if(!el) return;
+  const cod = document.getElementById('f-codigo').value.trim();
+  const cli = document.getElementById('f-cliente').value.trim();
+  const est = estoqueDaCaixa(cod, cli);
+  if(est.qtd > 0){
+    el.style.display = '';
+    el.innerHTML = `⚠️ <strong>Atenção:</strong> essa caixa já tem <strong>${fmt(est.qtd)} cx PRONTAS</strong> no estoque${est.lotes>1?` (${est.lotes} lotes)`:''} — caixa pronta com etiqueta (resto de pedido). Confira antes de lançar pra não duplicar.`;
+  } else {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  }
+}
 // Listener: ao escolher caixa, puxa código + dados técnicos
 document.getElementById('f-caixa-sel').addEventListener('change', (e) => {
   const caixaId = e.target.value;
@@ -5483,6 +5511,7 @@ document.getElementById('f-caixa-sel').addEventListener('change', (e) => {
       }
     }
   }
+  atualizarAvisoEstoquePedido(); // v2.8.0
 });
 // Listener: botão "+ Cadastrar caixa agora" (abre modal de caixa pré-preenchido com o cliente)
 document.getElementById('btn-add-caixa-rapido').onclick = ()=>{
@@ -5631,7 +5660,12 @@ document.getElementById('btn-salvar').onclick=()=>{
       if((numPed||'') !== numAnterior) numMudou=true;
     }
   }
-  else STATE.pedidos.push({id:uuid(),criadoEm:Date.now(),registros:[],...dados});
+  else {
+    STATE.pedidos.push({id:uuid(),criadoEm:Date.now(),registros:[],...dados});
+    // v2.8.0 — lembrete se essa caixa já tem saldo em estoque PA (evita duplicar com resto de pedido)
+    const _est = estoqueDaCaixa(codigo, cliente);
+    if(_est.qtd > 0) toast(`⚠ Lembre: ${cliente} ${codigo} já tem ${fmt(_est.qtd)} cx PRONTAS no estoque`, 'warn');
+  }
   saveStorage(PK_PEDIDOS,STATE.pedidos);
   // 🔁 Número mudou no cadastro → propaga pela cadeia (enquanto o caminhão não carregou)
   if(numMudou) atualizarNumPedEmCascata(id, numPed||'');
