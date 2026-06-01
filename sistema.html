@@ -537,6 +537,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
   <!-- PRODUÇÃO -->
   <button class="tab active" data-view="dashboard" data-mod="producao">▦ Dashboard</button>
   <button class="tab" data-view="relatorio" data-mod="producao">▤ Relatório <span class="count" id="tab-count">0</span></button>
+  <button class="tab" data-view="pcp" data-mod="producao">🏭 PCP <span class="count" id="tab-count-pcp" style="background:rgba(139,92,246,.2);color:#c4b5fd">0</span></button>
   <button class="tab" data-view="estoque" data-mod="producao">📥 Estoque <span class="count" id="tab-count-estoque" style="background:rgba(16,185,129,.2);color:#6ee7b7">0</span></button>
   <button class="tab" data-view="chat" data-mod="producao">💬 Chat <span class="count" id="tab-count-chat" style="background:rgba(239,68,68,.25);color:#fca5a5;display:none">0</span></button>
 
@@ -623,16 +624,33 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
   </div>
 </div>
 
+<style>
+  /* Cards clicáveis (Relatório + PCP) */
+  .kpi[data-relcard],.kpi[data-pcpcard]{cursor:pointer;transition:box-shadow .15s,transform .1s;position:relative}
+  .kpi[data-relcard]:hover,.kpi[data-pcpcard]:hover{transform:translateY(-1px)}
+  .kpi.card-active{box-shadow:0 0 0 2px var(--blue)}
+  .kpi[data-pcpcard].card-active{box-shadow:0 0 0 2px #8b5cf6}
+  .kpi.card-active::after{content:'● filtrando';position:absolute;top:8px;right:10px;font-size:9px;color:#7dd3fc;font-family:'JetBrains Mono'}
+  .kpi[data-pcpcard].card-active::after{color:#c4b5fd}
+  /* Chip de filtro ativo via card */
+  .card-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(0,159,227,.15);color:#7dd3fc;border:1px solid rgba(0,159,227,.4);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer}
+  .card-chip.pcp{background:rgba(139,92,246,.15);color:#c4b5fd;border-color:rgba(139,92,246,.4)}
+  .card-chip .x{opacity:.7}
+  /* Miniatura de foto no PCP */
+  .pcp-foto{width:50px;height:50px;border-radius:8px;border:1px solid var(--line-soft);object-fit:cover;cursor:pointer;background:var(--bg-3)}
+  .pcp-foto-vazia{width:50px;height:50px;border-radius:8px;border:1px dashed var(--line-soft);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-4);background:var(--bg-3)}
+</style>
+
 <div class="view" id="view-relatorio">
   <div class="kpi-grid k5">
-    <div class="kpi k-violet" id="rkpi-valor"><div class="kpi-label">Valor Total</div><div class="kpi-value">R$ 0</div><div class="kpi-sub">carteira ativa</div></div>
-    <div class="kpi" id="rkpi-pedidos"><div class="kpi-label">Pedidos no Filtro</div><div class="kpi-value">0</div><div class="kpi-sub">linhas exibidas</div></div>
-    <div class="kpi k-red" id="rkpi-atrasados"><div class="kpi-label">Atrasados</div><div class="kpi-value">0</div><div class="kpi-sub">dias acumulados</div></div>
-    <div class="kpi k-blue" id="rkpi-producao"><div class="kpi-label">Em Produção</div><div class="kpi-value">0</div><div class="kpi-sub">rodando agora</div></div>
-    <div class="kpi k-green" id="rkpi-pronto"><div class="kpi-label">Pronto p/ Carregar</div><div class="kpi-value">0</div><div class="kpi-sub">aguarda expedição</div></div>
+    <div class="kpi k-green" id="rkpi-valor" data-relcard="ativos"><div class="kpi-label">Total em Carteira</div><div class="kpi-value">R$ 0</div><div class="kpi-sub">todos os ativos</div></div>
+    <div class="kpi" id="rkpi-pedidos" data-relcard="ativos"><div class="kpi-label">Total de Pedidos</div><div class="kpi-value">0</div><div class="kpi-sub">na carteira</div></div>
+    <div class="kpi k-red" id="rkpi-atrasados" data-relcard="atrasado"><div class="kpi-label">Total em Atraso</div><div class="kpi-value">0</div><div class="kpi-sub">pedidos vencidos</div></div>
+    <div class="kpi k-violet" id="rkpi-prog" data-relcard="g_programacao"><div class="kpi-label">Em Programação</div><div class="kpi-value">0</div><div class="kpi-sub">aguardando</div></div>
+    <div class="kpi k-teal" id="rkpi-pronto" data-relcard="pronto_carregar"><div class="kpi-label">Pronto p/ Entregar</div><div class="kpi-value">0</div><div class="kpi-sub">aguarda expedição</div></div>
   </div>
   <div class="rel-toolbar">
-    <div class="rel-search"><input type="text" id="rel-q" placeholder="Buscar cliente, código..."></div>
+    <div class="rel-search"><input type="text" id="rel-q" placeholder="Buscar nº pedido, cliente, código..."></div>
     <select id="rel-fstatus" style="max-width:240px">
       <option value="todos">Todos os status</option>
       <option value="ativos">Apenas ativos</option>
@@ -662,15 +680,63 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
     <div class="rel-table-scroll">
       <table class="rel">
         <thead><tr>
-          <th>Cliente</th><th>Produto/Cód.</th>
+          <th>Nº Pedido</th><th>Cliente</th><th>Produto/Cód.</th>
           <th style="text-align:right">Qtd</th><th style="text-align:right">Valor unit.</th><th style="text-align:right">Total</th>
-          <th>Data entrega</th><th>Atraso</th><th>Status operacional</th><th>Progresso</th>
-          <th style="text-align:right">Média real</th><th></th>
+          <th>Data entrega</th><th>Atraso</th><th>Status</th><th></th>
         </tr></thead>
         <tbody id="rel-tbody"></tbody>
       </table>
     </div>
     <div class="rel-totals" id="rel-totals"></div>
+  </div>
+</div>
+
+<!-- VIEW: PCP — programação (chão de fábrica), SEM preço -->
+<div class="view" id="view-pcp">
+  <div class="kpi-grid k5">
+    <div class="kpi k-stone" id="pkpi-esp" data-pcpcard="esperando_programacao"><div class="kpi-label">Esperando Programação</div><div class="kpi-value">0</div><div class="kpi-sub">a definir</div></div>
+    <div class="kpi k-violet" id="pkpi-prog" data-pcpcard="programado"><div class="kpi-label">Programado</div><div class="kpi-value">0</div><div class="kpi-sub">aguardando início</div></div>
+    <div class="kpi k-green" id="pkpi-mat" data-pcpcard="material_disponivel"><div class="kpi-label">Material Disponível</div><div class="kpi-value">0</div><div class="kpi-sub">chapa pronta</div></div>
+    <div class="kpi k-blue" id="pkpi-prod" data-pcpcard="em_producao"><div class="kpi-label">Em Produção</div><div class="kpi-value">0</div><div class="kpi-sub">rodando agora</div></div>
+    <div class="kpi k-red" id="pkpi-atras" data-pcpcard="atrasado"><div class="kpi-label">Atrasados</div><div class="kpi-value">0</div><div class="kpi-sub">requer atenção</div></div>
+  </div>
+  <div class="rel-toolbar">
+    <div class="rel-search"><input type="text" id="pcp-q" placeholder="Buscar nº pedido, cliente, código..."></div>
+    <select id="pcp-fstatus" style="max-width:240px">
+      <option value="ativos">Apenas ativos</option>
+      <option value="todos">Todos os status</option>
+      <option value="programado">Programado</option>
+      <option value="esperando_programacao">Esperando programação</option>
+      <option value="material_disponivel">Material disponível</option>
+      <option value="em_producao">Em produção</option>
+      <option value="reprogramado">Reprogramado</option>
+      <option value="bloqueado_financeiro">Bloqueado financeiro</option>
+      <option value="pronto_carregar">Pronto p/ carregar</option>
+      <option value="carregado">Carregado</option>
+      <option value="entregue">Entregue</option>
+      <option value="atrasado">Atrasados</option>
+    </select>
+    <select id="pcp-fperiodo" style="max-width:200px">
+      <option value="todos">Qualquer data</option>
+      <option value="atraso">Em atraso</option>
+      <option value="hoje">Hoje</option>
+      <option value="3dias">Próx. 3 dias</option>
+      <option value="semana">Próx. 7 dias</option>
+      <option value="mes">Próx. 30 dias</option>
+    </select>
+  </div>
+  <div class="rel-table-wrap">
+    <div class="rel-table-scroll">
+      <table class="rel">
+        <thead><tr>
+          <th>Foto</th><th>Nº Pedido</th><th>Cliente</th><th>Produto/Cód.</th>
+          <th>Status</th><th style="text-align:right">Qtd chapas</th><th>Processo / Progresso</th>
+          <th style="text-align:right">Média real</th><th></th>
+        </tr></thead>
+        <tbody id="pcp-tbody"></tbody>
+      </table>
+    </div>
+    <div class="rel-totals" id="pcp-totals"></div>
   </div>
 </div>
 
@@ -3956,7 +4022,8 @@ let STATE = {
   progressosOperador: {}, // v1.9.6 — progressos do operador em tempo real (fases, perdas, paradas)
   perdasOperador: {}, // v1.9.9 — perdas persistidas (sobrevivem à finalização do pedido)
   filtroAtivo:'todos',semanaOffset:0,view:'dashboard',
-  relFiltros:{q:'',status:'ativos',periodo:'todos'}
+  relFiltros:{q:'',status:'ativos',periodo:'todos'},
+  pcpFiltros:{q:'',status:'ativos',periodo:'todos'}
 };
 const PK_PEDIDOS='mtx_prod_pedidos', PK_CONFIG='mtx_prod_config', PK_BACKUP='mtx_prod_backup_info', PK_SETUP_CLIENTES='jp_setup_clientes', PK_ORDEM='jp_ordem_producao';
 
@@ -4087,7 +4154,7 @@ function statusVisualCard(p){
 
 // MÓDULOS — agrupamento das abas
 const MODULOS = {
-  producao: ['dashboard','relatorio','estoque','chat'],
+  producao: ['dashboard','relatorio','pcp','estoque','chat'],
   comercial: ['orcamentos','orc-solicitacoes','orc-onda-config'],
   cadastros: ['cad-clientes','cad-vendedores','cad-caixas','cad-papeis','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores'],
   expedicao: ['entregas','escalas','entregas-vivo','exp-carregar','exp-historico'],
@@ -4204,6 +4271,8 @@ function renderKPIs(){
   document.querySelector('#kpi-valor-pronto .kpi-value').textContent = fmtBRL(valPronto);
   document.querySelector('#kpi-valor-carteira .kpi-value').textContent = fmtBRL(valCarteira);
   document.getElementById('tab-count').textContent=STATE.pedidos.length;
+  const emChao = STATE.pedidos.filter(p=>['esperando_programacao','programado','reprogramado','material_disponivel','em_producao'].includes(p.statusOp)).length;
+  const elPcp=document.getElementById('tab-count-pcp'); if(elPcp) elPcp.textContent=emChao;
   const entregues = STATE.pedidos.filter(p=>p.statusOp==='entregue').length;
   document.getElementById('tab-count-entregas').textContent = entregues;
 }
@@ -4918,14 +4987,15 @@ function calcularDataPrevisaoEntrega(horasNecessarias, cliente){
 }
 
 // RELATÓRIO
-function pedidosFiltradosRel(){
-  const q=(STATE.relFiltros.q||'').trim().toLowerCase();
-  const fs=STATE.relFiltros.status,fp=STATE.relFiltros.periodo;
+function pedidosFiltrados(filtros){
+  const q=(filtros.q||'').trim().toLowerCase();
+  const fs=filtros.status,fp=filtros.periodo;
   return STATE.pedidos.filter(p=>{
-    if(q){const t=(p.cliente+' '+(p.codigo||'')+' '+(p.obs||'')).toLowerCase();if(!t.includes(q))return false}
-    if(fs==='ativos'&&p.statusOp==='entregue')return false;
+    if(q){const t=(numPedDe(p)+' '+p.cliente+' '+(p.codigo||'')+' '+(p.obs||'')).toLowerCase();if(!t.includes(q))return false}
+    if(fs==='ativos'){if(p.statusOp==='entregue')return false}
     else if(fs==='atrasado'){if(!isAtrasado(p))return false}
-    else if(fs!=='todos'&&fs!=='ativos'&&p.statusOp!==fs)return false;
+    else if(fs==='g_programacao'){if(!['esperando_programacao','programado','reprogramado'].includes(p.statusOp))return false}
+    else if(fs!=='todos'&&p.statusOp!==fs)return false;
     const d=diffDias(p.dataEntrega);
     if(fp==='atraso'){if(!isAtrasado(p))return false}
     else if(fp==='hoje'){if(d!==0)return false}
@@ -4935,163 +5005,207 @@ function pedidosFiltradosRel(){
     return true;
   }).sort(ordenarPorUrgencia);
 }
-function renderRelatorioKPIs(lista){
-  let valTotal=0,atras=0,prod=0,pronto=0,diasAtraso=0;
-  STATE.pedidos.forEach(p=>{
-    if(p.statusOp!=='entregue')valTotal+=valorTotal(p);
-    if(p.statusOp==='em_producao')prod++;
-    if(p.statusOp==='pronto_carregar')pronto++;
-    if(isAtrasado(p)){atras++;diasAtraso+=Math.abs(diffDias(p.dataEntrega))}
-  });
-  document.querySelector('#rkpi-valor .kpi-value').textContent=fmtBRL(valTotal);
-  document.querySelector('#rkpi-pedidos .kpi-value').textContent=lista.length;
-  document.querySelector('#rkpi-atrasados .kpi-value').textContent=atras;
-  document.querySelector('#rkpi-atrasados .kpi-sub').textContent=`${diasAtraso} dias acumulados`;
-  document.querySelector('#rkpi-producao .kpi-value').textContent=prod;
-  document.querySelector('#rkpi-pronto .kpi-value').textContent=pronto;
+function pedidosFiltradosRel(){ return pedidosFiltrados(STATE.relFiltros); }
+function pedidosFiltradosPCP(){ return pedidosFiltrados(STATE.pcpFiltros); }
+// ===== Helpers compartilhados entre RELATÓRIO e PCP =====
+// (mesma lógica de sempre; só extraída pra não duplicar e garantir comportamento idêntico)
+function relAtrasoTxtCls(p){
+  const dias=diffDias(p.dataEntrega);
+  if(p.statusOp==='entregue')return {txt:'—',cls:'done'};
+  if(dias==null)return {txt:'—',cls:'ok'};
+  if(dias<0)return {txt:`+${Math.abs(dias)}d`,cls:'bad'};
+  if(dias===0)return {txt:'HOJE',cls:'warn'};
+  if(dias<=2)return {txt:`${dias}d`,cls:'warn'};
+  return {txt:`${dias}d`,cls:'ok'};
 }
-function renderRelatorio(){
-  const lista=pedidosFiltradosRel();
-  renderRelatorioKPIs(lista);
-  const tbody=document.getElementById('rel-tbody'),totalsEl=document.getElementById('rel-totals');
-  if(lista.length===0){tbody.innerHTML=`<tr><td colspan="11"><div class="empty"><div class="empty-icon">▤</div><div class="empty-text">Nenhum pedido neste filtro</div></div></td></tr>`;totalsEl.innerHTML='';return}
-  let sQtd=0,sVal=0,sProd=0;
-  tbody.innerHTML=lista.map(p=>{
-    const q=qtdProduzida(p),restante=Math.max(0,p.qtd-q);
-    const pct=Math.min(100,(q/p.qtd)*100);
-    const dias=diffDias(p.dataEntrega),atras=isAtrasado(p);
-    const mr=mediaReal(p),total=valorTotal(p);
-    sQtd+=+p.qtd||0;sVal+=total;sProd+=q;
-    let atrasoTxt,atrasoCls;
-    if(p.statusOp==='entregue'){atrasoTxt='—';atrasoCls='done'}
-    else if(dias==null){atrasoTxt='—';atrasoCls='ok'}
-    else if(dias<0){atrasoTxt=`+${Math.abs(dias)}d`;atrasoCls='bad'}
-    else if(dias===0){atrasoTxt='HOJE';atrasoCls='warn'}
-    else if(dias<=2){atrasoTxt=`${dias}d`;atrasoCls='warn'}
-    else {atrasoTxt=`${dias}d`;atrasoCls='ok'}
-    const dataFmt=p.dataEntrega?p.dataEntrega.split('-').reverse().join('/'):'—';
-    const statusOpts=STATUS_ORDER.map(s=>`<option value="${s}" ${p.statusOp===s?'selected':''}>${STATUS_LABELS[s]}</option>`).join('');
-    // Chapas disponíveis
-    const chapas = p.chapasDisponiveis||0;
-    const metaReal = chapas > 0 ? Math.min(chapas, p.qtd) : p.qtd;
-    const pctReal = Math.min(100,(q/metaReal)*100);
-    const restanteReal = Math.max(0, metaReal - q);
-    let chapasHtml = '';
-    if(chapas > 0 && chapas < p.qtd){
-      const faltaChapas = p.qtd - chapas;
-      const pctFalta = (faltaChapas/p.qtd*100).toFixed(1);
-      chapasHtml = `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono'">
-        📋 <span style="color:var(--amber-2)">${fmt(chapas)}</span> chapas
-        <span style="color:#fca5a5;background:rgba(239,68,68,.12);padding:1px 5px;border-radius:3px;margin-left:4px">-${fmt(faltaChapas)} (${pctFalta}%)</span>
-      </div>`;
-    } else if(chapas >= p.qtd){
-      chapasHtml = `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:var(--green-2)">📋 ${fmt(chapas)} chapas ✓</div>`;
-    }
-    return `<tr class="${atras?'is-atrasado':''} ${p.statusOp==='entregue'?'is-entregue':''}" data-pid="${p.id}">
-      <td class="col-cliente">${escapeHtml(p.cliente)}</td>
-      <td class="col-codigo">${escapeHtml(p.codigo||'—')}</td>
-      <td class="col-num">${fmt(p.qtd)}</td>
-      <td class="col-val">${fmtBRL(p.valor)}</td>
-      <td class="col-val" style="color:var(--amber-2);font-weight:700">${fmtBRL(total)}</td>
-      <td class="col-data">${dataFmt}</td>
-      <td><span class="atraso-cell ${atrasoCls}">${atrasoTxt}</span></td>
-      <td><select class="status-select s-${p.statusOp}" data-stsel="${p.id}">${statusOpts}</select></td>
-      <td>
-        <div class="inline-prog"><div class="bar"><div class="fill" style="width:${pctReal}%;${p.statusOp==='entregue'?'background:linear-gradient(90deg,var(--green),var(--green-2))':''}"></div></div><div class="pct">${pctReal.toFixed(0)}%</div></div>
-        <div style="font-size:10px;color:var(--text-4);font-family:'JetBrains Mono';margin-top:2px">${fmt(q)} / ${fmt(metaReal)} · falta ${fmt(restanteReal)}</div>
-        ${chapasHtml}
-        ${(()=>{
-          // Indicador de produção/estoque
-          if(p.statusOp === 'pronto_carregar' || p.statusOp === 'entregue'){
-            // Verifica se tá no estoque PA
-            const noEstoque = (typeof STATE_EST !== 'undefined' && STATE_EST.caixas) ?
-              STATE_EST.caixas.find(c => c.pedidoId === p.id) : null;
-            if(noEstoque){
-              return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:#22c55e;background:rgba(34,197,94,.1);padding:2px 6px;border-radius:4px;border-left:2px solid #22c55e">📦 ESTOQUE PA · ${fmt(noEstoque.qtd)} cx · ${noEstoque.paletes||0} paletes</div>`;
-            } else if(p.statusOp === 'entregue'){
-              return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:#8b5cf6">✅ ENTREGUE</div>`;
-            }
-            return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:var(--green-2)">✓ Pronto carregar</div>`;
-          }
-          // Em produção: mostra etapas concluídas
-          if(p.etapas){
-            const etapasOk = [];
-            if(p.etapas.impressora?.status === 'concluido') etapasOk.push('Slotter');
-            if(p.etapas.coladeira?.status === 'concluido') etapasOk.push('Coladeira');
-            if(p.etapas.grampeadeira?.status === 'concluido') etapasOk.push('Grampeadeira');
-            if(etapasOk.length > 0){
-              return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:#009FE3">⚙️ ${etapasOk.join(' ✓ ')} ✓</div>`;
-            }
-          }
-          return '';
-        })()}
-        <input type="number" class="chapas-input" data-chapaspid="${p.id}" value="${chapas||''}" placeholder="📋 qtd chapas" min="0" style="margin-top:5px;padding:4px 7px;font-size:10px;width:100%;background:var(--bg-3);border:1px solid var(--line-soft);border-radius:5px;color:var(--text-2);font-family:'JetBrains Mono'">
-      </td>
-      <td class="col-num" style="color:${mr?(mr>=p.cxh?'var(--green-2)':'#fca5a5'):'var(--text-4)'}">${mr?fmt(Math.round(mr))+' cx/h':'—'}<div style="font-size:10px;color:var(--text-4)">meta ${fmt(p.cxh)}</div></td>
-      <td><div class="row-acts">
-        <button class="icon-btn" title="Registrar produção" data-act="registrar" data-pid="${p.id}">+</button>
-        <button class="icon-btn" title="Editar" data-act="editar" data-pid="${p.id}">✎</button>
-        <button class="icon-btn del" title="Excluir" data-act="excluir" data-pid="${p.id}">✕</button>
-      </div></td>
-    </tr>`;
-  }).join('');
-  totalsEl.innerHTML=`<div>Qtd total: <strong>${fmt(sQtd)}</strong> caixas</div><div>Produzido: <strong>${fmt(sProd)}</strong> caixas</div><div>Falta: <strong>${fmt(sQtd-sProd)}</strong> caixas</div><div>Valor total: <strong>${fmtBRL(sVal)}</strong></div>`;
+function relStatusOpts(p){return STATUS_ORDER.map(s=>`<option value="${s}" ${p.statusOp===s?'selected':''}>${STATUS_LABELS[s]}</option>`).join('')}
+// HTML da nota de chapas (igual ao de antes)
+function relChapasNota(p,chapas){
+  if(chapas>0 && chapas<p.qtd){
+    const falta=p.qtd-chapas,pctFalta=(falta/p.qtd*100).toFixed(1);
+    return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono'">📋 <span style="color:var(--amber-2)">${fmt(chapas)}</span> chapas <span style="color:#fca5a5;background:rgba(239,68,68,.12);padding:1px 5px;border-radius:3px;margin-left:4px">-${fmt(falta)} (${pctFalta}%)</span></div>`;
+  } else if(chapas>=p.qtd && chapas>0){
+    return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:var(--green-2)">📋 ${fmt(chapas)} chapas ✓</div>`;
+  }
+  return '';
+}
+// Indicador de estoque/etapas (igual ao de antes)
+function relIndicadorEstoque(p){
+  if(p.statusOp==='pronto_carregar'||p.statusOp==='entregue'){
+    const noEstoque=(typeof STATE_EST!=='undefined'&&STATE_EST.caixas)?STATE_EST.caixas.find(c=>c.pedidoId===p.id):null;
+    if(noEstoque)return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:#22c55e;background:rgba(34,197,94,.1);padding:2px 6px;border-radius:4px;border-left:2px solid #22c55e">📦 ESTOQUE PA · ${fmt(noEstoque.qtd)} cx · ${noEstoque.paletes||0} paletes</div>`;
+    if(p.statusOp==='entregue')return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:#8b5cf6">✅ ENTREGUE</div>`;
+    return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:var(--green-2)">✓ Pronto carregar</div>`;
+  }
+  if(p.etapas){
+    const ok=[];
+    if(p.etapas.impressora?.status==='concluido')ok.push('Slotter');
+    if(p.etapas.coladeira?.status==='concluido')ok.push('Coladeira');
+    if(p.etapas.grampeadeira?.status==='concluido')ok.push('Grampeadeira');
+    if(ok.length)return `<div style="font-size:10px;margin-top:3px;font-family:'JetBrains Mono';color:#009FE3">⚙️ ${ok.join(' ✓ ')} ✓</div>`;
+  }
+  return '';
+}
+// Liga o <select> de status (MESMA lógica de antes) — usado nas duas abas
+function bindStatusSelects(tbody){
   tbody.querySelectorAll('[data-stsel]').forEach(sel=>{sel.onchange=()=>{
     const p=STATE.pedidos.find(x=>x.id===sel.dataset.stsel);
     if(!p)return;
-    const statusAnterior = p.statusOp;
+    const statusAnterior=p.statusOp;
     p.statusOp=sel.value;
-    // Se entrou em "entregue" pela primeira vez, registra a data real
-    if(p.statusOp==='entregue' && statusAnterior !== 'entregue'){
-      p.dataEntregueReal = ymd(today());
-    }
-    // Se saiu de entregue, remove a data real
-    if(statusAnterior==='entregue' && p.statusOp !== 'entregue'){
-      delete p.dataEntregueReal;
-    }
+    if(p.statusOp==='entregue' && statusAnterior!=='entregue'){p.dataEntregueReal=ymd(today())}
+    if(statusAnterior==='entregue' && p.statusOp!=='entregue'){delete p.dataEntregueReal}
     saveStorage(PK_PEDIDOS,STATE.pedidos);
     toast(`Status: ${STATUS_LABELS[p.statusOp]}`);renderAll();
   }});
+}
+// Liga os botões de ação (+/✎/✕) — MESMA lógica de antes
+function bindRowActs(tbody){
   tbody.querySelectorAll('[data-act]').forEach(b=>{b.onclick=()=>{
     const a=b.dataset.act,pid=b.dataset.pid;
     if(a==='editar')abrirModalPedido(pid);
     if(a==='registrar')abrirModalRegistro(pid);
     if(a==='excluir')excluirPedido(pid);
   }});
-
-  // Handler inline do campo de chapas disponíveis
+}
+// Liga o campo de qtd de chapas (MESMA lógica/transição de status de antes)
+function bindChapasInputs(tbody,rerenderFn){
   tbody.querySelectorAll('.chapas-input').forEach(input=>{
     let debounceTimer;
-    input.oninput = ()=>{
+    input.oninput=()=>{
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(()=>{
-        const pid = input.dataset.chapaspid;
-        const p = STATE.pedidos.find(x=>x.id===pid);
-        if(!p) return;
-        const v = +input.value||0;
-        p.chapasDisponiveis = v > 0 ? v : null;
-        // 🆕 v1.9.7 — digitou chapa => status "Material disponível" (só se ainda não começou)
-        const naoIniciado = ['programado','esperando_programacao','reprogramado'];
-        if(v > 0 && naoIniciado.includes(p.statusOp)){
-          p.statusOp = 'material_disponivel';
-        } else if(v <= 0 && p.statusOp === 'material_disponivel'){
-          p.statusOp = 'esperando_programacao'; // zerou a chapa => volta a esperar
-        }
-        saveStorage(PK_PEDIDOS, STATE.pedidos);
-        // Atualizar só a célula sem re-renderizar toda a tabela
-        const tr = input.closest('tr');
-        if(tr && v > 0 && v < p.qtd){
-          const falta = p.qtd - v;
-          const pct = (falta/p.qtd*100).toFixed(1);
-          toast(`📋 ${fmt(v)} chapas · faltam ${fmt(falta)} (${pct}%)`);
-        } else if(v >= p.qtd){
-          toast(`📋 ${fmt(v)} chapas — suficientes ✓`);
-        }
-      }, 600);
+      debounceTimer=setTimeout(()=>{
+        const pid=input.dataset.chapaspid;
+        const p=STATE.pedidos.find(x=>x.id===pid);
+        if(!p)return;
+        const v=+input.value||0;
+        p.chapasDisponiveis=v>0?v:null;
+        const naoIniciado=['programado','esperando_programacao','reprogramado'];
+        if(v>0 && naoIniciado.includes(p.statusOp)){p.statusOp='material_disponivel'}
+        else if(v<=0 && p.statusOp==='material_disponivel'){p.statusOp='esperando_programacao'}
+        saveStorage(PK_PEDIDOS,STATE.pedidos);
+        const tr=input.closest('tr');
+        if(tr && v>0 && v<p.qtd){const falta=p.qtd-v,pct=(falta/p.qtd*100).toFixed(1);toast(`📋 ${fmt(v)} chapas · faltam ${fmt(falta)} (${pct}%)`)}
+        else if(v>=p.qtd && v>0){toast(`📋 ${fmt(v)} chapas — suficientes ✓`)}
+      },600);
     };
-    // Ao sair do campo, re-renderiza pra atualizar badges e barra
-    input.onblur = ()=>{ setTimeout(()=>renderRelatorio(), 700); };
+    input.onblur=()=>{ setTimeout(()=>rerenderFn(), 700) };
   });
+}
+// Liga a foto do PCP (abre grande em nova aba)
+function bindFotoPedido(tbody){
+  tbody.querySelectorAll('.pcp-foto').forEach(img=>{img.onclick=()=>{const u=img.dataset.foto;if(u)window.open(u,'_blank','noopener')}});
+}
+
+// ===== RELATÓRIO — foco em valores/carteira =====
+function renderRelatorioKPIs(){
+  let valCarteira=0,pedidos=0,atras=0,valAtras=0,prog=0,pronto=0;
+  STATE.pedidos.forEach(p=>{
+    if(p.statusOp!=='entregue'){valCarteira+=valorTotal(p);pedidos++}
+    if(['esperando_programacao','programado','reprogramado'].includes(p.statusOp))prog++;
+    if(p.statusOp==='pronto_carregar')pronto++;
+    if(isAtrasado(p)){atras++;valAtras+=valorTotal(p)}
+  });
+  document.querySelector('#rkpi-valor .kpi-value').textContent=fmtBRL(valCarteira);
+  document.querySelector('#rkpi-pedidos .kpi-value').textContent=pedidos;
+  document.querySelector('#rkpi-atrasados .kpi-value').textContent=atras;
+  document.querySelector('#rkpi-atrasados .kpi-sub').textContent=fmtBRL(valAtras);
+  document.querySelector('#rkpi-prog .kpi-value').textContent=prog;
+  document.querySelector('#rkpi-pronto .kpi-value').textContent=pronto;
+  document.querySelectorAll('#view-relatorio .kpi[data-relcard]').forEach(c=>c.classList.toggle('card-active',c.dataset.relcard===STATE.relFiltros.status));
+}
+function renderRelatorio(){
+  const lista=pedidosFiltradosRel();
+  renderRelatorioKPIs();
+  const tbody=document.getElementById('rel-tbody'),totalsEl=document.getElementById('rel-totals');
+  if(lista.length===0){tbody.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-icon">▤</div><div class="empty-text">Nenhum pedido neste filtro</div></div></td></tr>`;totalsEl.innerHTML='';return}
+  let sQtd=0,sVal=0,sProd=0;
+  tbody.innerHTML=lista.map(p=>{
+    const q=qtdProduzida(p),atras=isAtrasado(p),total=valorTotal(p);
+    sQtd+=+p.qtd||0;sVal+=total;sProd+=q;
+    const a=relAtrasoTxtCls(p);
+    const dataFmt=p.dataEntrega?p.dataEntrega.split('-').reverse().join('/'):'—';
+    return `<tr class="${atras?'is-atrasado':''} ${p.statusOp==='entregue'?'is-entregue':''}" data-pid="${p.id}">
+      <td class="col-num" style="font-family:'JetBrains Mono';color:#33B5E8;font-weight:700">${escapeHtml(numPedDe(p)||'—')}</td>
+      <td class="col-cliente">${escapeHtml(p.cliente)}</td>
+      <td class="col-codigo">${escapeHtml(p.codigo||'—')}</td>
+      <td class="col-num">${fmt(p.qtd)}</td>
+      <td class="col-val">${fmtBRL(p.valor)}</td>
+      <td class="col-val" style="color:var(--amber-2);font-weight:700">${fmtBRL(total)}</td>
+      <td class="col-data">${dataFmt}</td>
+      <td><span class="atraso-cell ${a.cls}">${a.txt}</span></td>
+      <td><select class="status-select s-${p.statusOp}" data-stsel="${p.id}">${relStatusOpts(p)}</select></td>
+      <td><div class="row-acts">
+        <button class="icon-btn" title="Editar" data-act="editar" data-pid="${p.id}">✎</button>
+        <button class="icon-btn del" title="Excluir" data-act="excluir" data-pid="${p.id}">✕</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  totalsEl.innerHTML=`<div>Qtd total: <strong>${fmt(sQtd)}</strong> caixas</div><div>Produzido: <strong>${fmt(sProd)}</strong> caixas</div><div>Falta: <strong>${fmt(sQtd-sProd)}</strong> caixas</div><div>Valor total: <strong>${fmtBRL(sVal)}</strong></div>`;
+  bindStatusSelects(tbody);
+  bindRowActs(tbody);
+}
+
+// ===== PCP — programação (chão de fábrica), SEM preço =====
+function renderPCPKPIs(){
+  let esp=0,prog=0,mat=0,prod=0,atras=0;
+  STATE.pedidos.forEach(p=>{
+    if(p.statusOp==='esperando_programacao')esp++;
+    else if(p.statusOp==='programado')prog++;
+    else if(p.statusOp==='material_disponivel')mat++;
+    else if(p.statusOp==='em_producao')prod++;
+    if(isAtrasado(p))atras++;
+  });
+  document.querySelector('#pkpi-esp .kpi-value').textContent=esp;
+  document.querySelector('#pkpi-prog .kpi-value').textContent=prog;
+  document.querySelector('#pkpi-mat .kpi-value').textContent=mat;
+  document.querySelector('#pkpi-prod .kpi-value').textContent=prod;
+  document.querySelector('#pkpi-atras .kpi-value').textContent=atras;
+  document.querySelectorAll('#view-pcp .kpi[data-pcpcard]').forEach(c=>c.classList.toggle('card-active',c.dataset.pcpcard===STATE.pcpFiltros.status));
+}
+function renderPCP(){
+  const lista=pedidosFiltradosPCP();
+  renderPCPKPIs();
+  const tbody=document.getElementById('pcp-tbody'),totalsEl=document.getElementById('pcp-totals');
+  if(lista.length===0){tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="empty-icon">🏭</div><div class="empty-text">Nenhum pedido neste filtro</div></div></td></tr>`;totalsEl.innerHTML='';return}
+  let sQtd=0,sProd=0;
+  tbody.innerHTML=lista.map(p=>{
+    const q=qtdProduzida(p),atras=isAtrasado(p),mr=mediaReal(p);
+    sQtd+=+p.qtd||0;sProd+=q;
+    const chapas=p.chapasDisponiveis||0;
+    const metaReal=chapas>0?Math.min(chapas,p.qtd):p.qtd;
+    const pctReal=Math.min(100,(q/metaReal)*100);
+    const restanteReal=Math.max(0,metaReal-q);
+    const cx=(typeof CAIXAS!=='undefined'&&p.caixaId)?CAIXAS.find(c=>c.id===p.caixaId):null;
+    const fotoUrl=cx&&cx.fotoUrl?cx.fotoUrl:'';
+    const fotoCell=fotoUrl?`<img class="pcp-foto" src="${escapeHtml(fotoUrl)}" data-foto="${escapeHtml(fotoUrl)}" alt="modelo" title="Clique pra ver grande">`:`<div class="pcp-foto-vazia" title="Sem foto cadastrada">📦</div>`;
+    return `<tr class="${atras?'is-atrasado':''} ${p.statusOp==='entregue'?'is-entregue':''}" data-pid="${p.id}">
+      <td>${fotoCell}</td>
+      <td class="col-num" style="font-family:'JetBrains Mono';color:#33B5E8;font-weight:700">${escapeHtml(numPedDe(p)||'—')}</td>
+      <td class="col-cliente">${escapeHtml(p.cliente)}</td>
+      <td class="col-codigo">${escapeHtml(p.codigo||'—')}</td>
+      <td><select class="status-select s-${p.statusOp}" data-stsel="${p.id}">${relStatusOpts(p)}</select></td>
+      <td style="text-align:right">
+        <input type="number" class="chapas-input" data-chapaspid="${p.id}" value="${chapas||''}" placeholder="📋 qtd chapas" min="0" style="padding:4px 7px;font-size:11px;width:110px;background:var(--bg-3);border:1px solid var(--line-soft);border-radius:5px;color:var(--text-2);font-family:'JetBrains Mono';text-align:right">
+        ${relChapasNota(p,chapas)}
+      </td>
+      <td>
+        <div class="inline-prog"><div class="bar"><div class="fill" style="width:${pctReal}%;${p.statusOp==='entregue'?'background:linear-gradient(90deg,var(--green),var(--green-2))':''}"></div></div><div class="pct">${pctReal.toFixed(0)}%</div></div>
+        <div style="font-size:10px;color:var(--text-4);font-family:'JetBrains Mono';margin-top:2px">${fmt(q)} / ${fmt(metaReal)} · falta ${fmt(restanteReal)}</div>
+        ${relIndicadorEstoque(p)}
+      </td>
+      <td class="col-num" style="color:${mr?(mr>=p.cxh?'var(--green-2)':'#fca5a5'):'var(--text-4)'}">${mr?fmt(Math.round(mr))+' cx/h':'—'}<div style="font-size:10px;color:var(--text-4)">meta ${fmt(p.cxh)}</div></td>
+      <td><div class="row-acts">
+        <button class="icon-btn" title="Registrar produção" data-act="registrar" data-pid="${p.id}">+</button>
+        <button class="icon-btn" title="Editar" data-act="editar" data-pid="${p.id}">✎</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  totalsEl.innerHTML=`<div>Qtd total: <strong>${fmt(sQtd)}</strong> caixas</div><div>Produzido: <strong>${fmt(sProd)}</strong> caixas</div><div>Falta: <strong>${fmt(sQtd-sProd)}</strong> caixas</div>`;
+  bindStatusSelects(tbody);
+  bindRowActs(tbody);
+  bindChapasInputs(tbody,renderPCP);
+  bindFotoPedido(tbody);
 }
 
 function exportCSV(){
@@ -5697,6 +5811,30 @@ document.getElementById('rel-q').oninput=e=>{STATE.relFiltros.q=e.target.value;r
 document.getElementById('rel-fstatus').onchange=e=>{STATE.relFiltros.status=e.target.value;renderRelatorio()};
 document.getElementById('rel-fperiodo').onchange=e=>{STATE.relFiltros.periodo=e.target.value;renderRelatorio()};
 document.getElementById('rel-csv').onclick=exportCSV;
+// PCP toolbar
+document.getElementById('pcp-q').oninput=e=>{STATE.pcpFiltros.q=e.target.value;renderPCP()};
+document.getElementById('pcp-fstatus').onchange=e=>{STATE.pcpFiltros.status=e.target.value;renderPCP()};
+document.getElementById('pcp-fperiodo').onchange=e=>{STATE.pcpFiltros.periodo=e.target.value;renderPCP()};
+// Cards clicáveis (Relatório) — clicar abre o filtro daquele card; clicar de novo volta pra "ativos"
+document.querySelectorAll('#view-relatorio .kpi[data-relcard]').forEach(card=>{
+  card.addEventListener('click',()=>{
+    const alvo=card.dataset.relcard;
+    STATE.relFiltros.status = (STATE.relFiltros.status===alvo) ? 'ativos' : alvo;
+    const sel=document.getElementById('rel-fstatus');
+    if(sel && [...sel.options].some(o=>o.value===STATE.relFiltros.status)) sel.value=STATE.relFiltros.status;
+    renderRelatorio();
+  });
+});
+// Cards clicáveis (PCP)
+document.querySelectorAll('#view-pcp .kpi[data-pcpcard]').forEach(card=>{
+  card.addEventListener('click',()=>{
+    const alvo=card.dataset.pcpcard;
+    STATE.pcpFiltros.status = (STATE.pcpFiltros.status===alvo) ? 'ativos' : alvo;
+    const sel=document.getElementById('pcp-fstatus');
+    if(sel && [...sel.options].some(o=>o.value===STATE.pcpFiltros.status)) sel.value=STATE.pcpFiltros.status;
+    renderPCP();
+  });
+});
 
 // IMPRESSÃO
 function abrirModalImprimir(){
@@ -6695,7 +6833,7 @@ function imprimirEtiquetasSistema({cliente, codigo, numPed, paletes, operador, d
   const dataHoraFmt = dataFmt + ' às ' + horaFmt;
   const etiquetas = paletes.map(pal=>`<div class="etiqueta"><div class="header"><div class="header-logo"><div class="logo-mark"><img src="data:image/png;base64,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" alt="JP Embalagens" style="width:100%;height:100%;object-fit:contain;display:block"></div><div class="logo-text"><div class="empresa-nome">JP EMBALAGENS</div><div class="empresa-sub">Caixas de Papelão</div></div></div><div class="header-pedido"><div class="pedido-label">PEDIDO</div><div class="pedido-num">${esc(numPed||'S/N')}</div></div></div><div class="divider-thick"></div><div class="dados-section"><div class="dado-row"><div class="dado-label">CLIENTE</div><div class="dado-valor dado-grande">${esc(cliente)}</div></div></div><div class="ref-section"><div class="ref-label">REFERÊNCIA</div><div class="ref-value" style="font-size:${refSize}mm">${esc(codigo||'—')}</div></div><div class="palete-section"><div class="palete-numero-wrap"><div class="palete-label-top">PALET Nº</div><div class="palete-numero">${pal.num}</div><div class="palete-total">DE ${total}</div></div><div class="palete-divider-v"></div><div class="palete-qtd-wrap"><div class="palete-label-top">QUANTIDADE NO PALETE</div><div class="palete-qtd" style="font-size:${calcQtdSize(fmtN(pal.cx))}mm">${fmtN(pal.cx)}</div><div class="palete-qtd-label">CAIXAS</div>${pesoUnit > 0 ? `<div class="palete-peso">~ ${(pesoUnit * pal.cx / 1000).toFixed(1).replace('.', ',')} kg</div>` : ''}</div></div><div class="divider-thick"></div><div class="qr-section"><div class="qr-info"><div class="qr-titulo">📷 LEIA O QR CODE PARA EXPEDIÇÃO</div><div class="qr-desc">Use o app de carregamento da JP para escanear este palete e adicioná-lo ao caminhão de entrega.</div></div><div class="qr-img-wrap"><img src="${qrUrl(pal)}" class="qr-img" alt="QR ${pal.num}"></div></div><div class="footer"><div class="footer-item"><span class="footer-l">Operador:</span><span class="footer-v">${esc(operador||'—')}</span></div><div class="footer-item"><span class="footer-l">Data impressão:</span><span class="footer-v">${dataHoraFmt}</span></div><div class="footer-item"><span class="footer-l">Total de paletes:</span><span class="footer-v">${total} paletes</span></div><div class="footer-item"><span class="footer-l">Total de caixas:</span><span class="footer-v">${fmtN(paletes.reduce((s,x)=>s+x.cx,0))} cx</span></div></div></div>`).join('<div class="page-break"></div>');
 
-  const css = `*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{html,body{width:210mm}.page-break{page-break-after:always;height:0;display:block}.etiqueta{page-break-inside:avoid;box-shadow:none!important}}.etiqueta{width:190mm;margin:8mm auto;border:2.5px solid #1a1a2e;border-radius:5mm;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;flex-direction:column;min-height:270mm}.header{background:#1a1a2e;color:#fff;padding:6mm 8mm;display:flex;align-items:center;justify-content:space-between;gap:4mm}.header-logo{display:flex;align-items:center;gap:4mm}.logo-mark{width:18mm;height:18mm;background:#fff;border-radius:3mm;display:flex;align-items:center;justify-content:center;padding:1.5mm;flex-shrink:0}.logo-mark svg{width:100%;height:100%;display:block}.empresa-nome{font-size:16pt;font-weight:900;letter-spacing:1.5px;line-height:1}.empresa-sub{font-size:8pt;color:#009FE3;letter-spacing:3px;text-transform:uppercase;margin-top:1.5mm;font-weight:600}.header-pedido{text-align:right}.pedido-label{font-size:7pt;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;font-weight:700}.pedido-num{font-size:22pt;font-weight:900;color:#009FE3;letter-spacing:1px;line-height:1.1}.divider-thick{height:2px;background:#1a1a2e}.dados-section{padding:6mm 8mm;display:flex;flex-direction:column;gap:4mm;flex:1}.dado-row{display:flex;align-items:baseline;border-bottom:1px solid #e2e8f0;padding-bottom:3mm;gap:4mm}.dado-row:last-child{border-bottom:none;padding-bottom:0}.dado-label{font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;min-width:42mm;flex-shrink:0}.dado-valor{font-size:14pt;font-weight:700;color:#1a1a2e;word-break:break-word}.dado-grande{font-size:18pt;font-weight:900}.ref-section{background:#f8fafc;border-top:2px solid #1a1a2e;border-bottom:2px solid #1a1a2e;padding:8mm;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5mm;min-height:65mm}.ref-label{font-size:10pt;color:#64748b;text-transform:uppercase;letter-spacing:6px;font-weight:700}.ref-value{font-weight:900;color:#1a1a2e;letter-spacing:1px;line-height:1;word-break:break-word;max-width:100%}.palete-section{background:#f8fafc;border-top:2px solid #1a1a2e;border-bottom:2px solid #1a1a2e;display:flex;align-items:stretch;min-height:60mm}.palete-numero-wrap{background:#1a1a2e;color:#fff;padding:6mm 8mm;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:55mm;gap:2mm}.palete-label-top{font-size:7pt;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;font-weight:700;text-align:center}.palete-numero{font-size:62pt;font-weight:900;line-height:1;color:#009FE3}.palete-total{font-size:11pt;color:#94a3b8;font-weight:700;letter-spacing:1px}.palete-divider-v{width:2px;background:#1a1a2e;flex-shrink:0}.palete-qtd-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6mm;gap:2mm}.palete-qtd{font-weight:900;color:#1a1a2e;line-height:1}.palete-qtd-label{font-size:12pt;font-weight:700;color:#64748b;letter-spacing:6px;text-transform:uppercase}.palete-peso{font-size:13pt;font-weight:700;color:#009FE3;margin-top:3mm;letter-spacing:1px}.qr-section{padding:5mm 8mm;display:flex;align-items:center;gap:6mm;background:#fff;border-top:2px solid #1a1a2e}.qr-info{flex:1}.qr-titulo{font-family:Arial,sans-serif;font-size:10pt;font-weight:900;color:#1a1a2e;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2mm}.qr-desc{font-size:8pt;color:#64748b;line-height:1.5}.qr-img-wrap{width:50mm;height:50mm;flex-shrink:0;border:1.5px solid #1a1a2e;border-radius:2mm;padding:1.5mm;background:#fff}.qr-img{width:100%;height:100%;display:block}.footer{background:#f1f5f9;padding:4mm 8mm;display:flex;flex-direction:column;gap:2mm;border-top:1px solid #cbd5e1}.footer-item{display:flex;justify-content:space-between;align-items:center;font-size:9pt}.footer-l{color:#64748b;font-weight:600}.footer-v{font-weight:900;color:#1a1a2e;font-size:10pt}`;
+  const css = `*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4 portrait;margin:0}@media print{html,body{width:210mm;margin:0;padding:0}.page-break{display:none!important}.etiqueta{width:210mm!important;height:297mm!important;min-height:0!important;margin:0!important;border:none!important;border-radius:0!important;box-shadow:none!important;page-break-after:always;page-break-inside:avoid;break-inside:avoid}.etiqueta:last-child{page-break-after:auto}}.etiqueta{width:190mm;margin:8mm auto;border:2.5px solid #1a1a2e;border-radius:5mm;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;flex-direction:column;min-height:270mm}.header{background:#1a1a2e;color:#fff;padding:6mm 8mm;display:flex;align-items:center;justify-content:space-between;gap:4mm}.header-logo{display:flex;align-items:center;gap:4mm}.logo-mark{width:18mm;height:18mm;background:#fff;border-radius:3mm;display:flex;align-items:center;justify-content:center;padding:1.5mm;flex-shrink:0}.logo-mark svg{width:100%;height:100%;display:block}.empresa-nome{font-size:16pt;font-weight:900;letter-spacing:1.5px;line-height:1}.empresa-sub{font-size:8pt;color:#009FE3;letter-spacing:3px;text-transform:uppercase;margin-top:1.5mm;font-weight:600}.header-pedido{text-align:right}.pedido-label{font-size:7pt;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;font-weight:700}.pedido-num{font-size:22pt;font-weight:900;color:#009FE3;letter-spacing:1px;line-height:1.1}.divider-thick{height:2px;background:#1a1a2e}.dados-section{padding:6mm 8mm;display:flex;flex-direction:column;gap:4mm;flex:1}.dado-row{display:flex;align-items:baseline;border-bottom:1px solid #e2e8f0;padding-bottom:3mm;gap:4mm}.dado-row:last-child{border-bottom:none;padding-bottom:0}.dado-label{font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;min-width:42mm;flex-shrink:0}.dado-valor{font-size:14pt;font-weight:700;color:#1a1a2e;word-break:break-word}.dado-grande{font-size:18pt;font-weight:900}.ref-section{background:#f8fafc;border-top:2px solid #1a1a2e;border-bottom:2px solid #1a1a2e;padding:8mm;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5mm;min-height:65mm}.ref-label{font-size:10pt;color:#64748b;text-transform:uppercase;letter-spacing:6px;font-weight:700}.ref-value{font-weight:900;color:#1a1a2e;letter-spacing:1px;line-height:1;word-break:break-word;max-width:100%}.palete-section{background:#f8fafc;border-top:2px solid #1a1a2e;border-bottom:2px solid #1a1a2e;display:flex;align-items:stretch;min-height:60mm}.palete-numero-wrap{background:#1a1a2e;color:#fff;padding:6mm 8mm;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:55mm;gap:2mm}.palete-label-top{font-size:7pt;color:#94a3b8;text-transform:uppercase;letter-spacing:2px;font-weight:700;text-align:center}.palete-numero{font-size:62pt;font-weight:900;line-height:1;color:#009FE3}.palete-total{font-size:11pt;color:#94a3b8;font-weight:700;letter-spacing:1px}.palete-divider-v{width:2px;background:#1a1a2e;flex-shrink:0}.palete-qtd-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6mm;gap:2mm}.palete-qtd{font-weight:900;color:#1a1a2e;line-height:1}.palete-qtd-label{font-size:12pt;font-weight:700;color:#64748b;letter-spacing:6px;text-transform:uppercase}.palete-peso{font-size:13pt;font-weight:700;color:#009FE3;margin-top:3mm;letter-spacing:1px}.qr-section{padding:5mm 8mm;display:flex;align-items:center;gap:6mm;background:#fff;border-top:2px solid #1a1a2e}.qr-info{flex:1}.qr-titulo{font-family:Arial,sans-serif;font-size:10pt;font-weight:900;color:#1a1a2e;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2mm}.qr-desc{font-size:8pt;color:#64748b;line-height:1.5}.qr-img-wrap{width:50mm;height:50mm;flex-shrink:0;border:1.5px solid #1a1a2e;border-radius:2mm;padding:1.5mm;background:#fff}.qr-img{width:100%;height:100%;display:block}.footer{background:#f1f5f9;padding:4mm 8mm;display:flex;flex-direction:column;gap:2mm;border-top:1px solid #cbd5e1}.footer-item{display:flex;justify-content:space-between;align-items:center;font-size:9pt}.footer-l{color:#64748b;font-weight:600}.footer-v{font-weight:900;color:#1a1a2e;font-size:10pt}`;
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ficha de Palete — JP Embalagens</title><style>${css}</style></head><body>${etiquetas}</body></html>`;
   const win = window.open('','_blank');
   if(win){win.document.write(html);win.document.close();setTimeout(()=>win.print(),1200);toast(`🖨️ ${total} etiqueta${total>1?'s':''} com QR abertas`);}
@@ -7618,6 +7756,7 @@ if(typeof db !== 'undefined' && db){
         // Refresh das views que mostram badges de fase
         if(STATE.view === 'dashboard') renderDashboard?.();
         if(STATE.view === 'relatorio') renderRelatorio?.();
+        if(STATE.view === 'pcp') renderPCP?.();
         if(STATE.view === 'perdas') renderPerdas?.();
         if(STATE.view === 'cronograma') renderCronograma?.();
         // v1.9.6 — Se modal do dia estiver aberto, reabre com mesmo ds pra atualizar badges
@@ -8040,6 +8179,7 @@ function renderAll(){
   atualizarBannerParcial(); // 🆕 atualiza banner de produção parcial
   if(STATE.view==='dashboard'){renderFiltros();renderPedidos();renderCronograma()}
   else if(STATE.view==='relatorio') renderRelatorio();
+  else if(STATE.view==='pcp') renderPCP();
   else if(STATE.view==='entregas') renderEntregas();
   else if(STATE.view==='abc') renderABC();
   else if(STATE.view==='eficiencia') renderEficiencia();
@@ -9584,7 +9724,7 @@ function renderEstoqueCaixas(){
         cliente: c.cliente, codigo: c.codigo,
         numPed: c.numPed, paletes: c.paletesData,
         operador: '—', data: c.prontoDesde.slice(0,10)
-      , pedidoId: p.id });
+      , pedidoId: c.pedidoId });
     });
   }
 
@@ -10660,19 +10800,19 @@ setTimeout(()=>{
 // Definição das permissões por perfil
 const PERMS = {
   admin: {
-    tabs: ['dashboard','relatorio','entregas','estoque','chat','orcamentos','orc-solicitacoes','orc-onda-config','escalas','graficos','produtividade','abc','eficiencia','perdas','velocidades','cad-clientes','cad-vendedores','cad-caixas','cad-papeis','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores','exp-carregar','entregas-vivo','manutencoes','exp-historico'],
+    tabs: ['dashboard','relatorio','pcp','entregas','estoque','chat','orcamentos','orc-solicitacoes','orc-onda-config','escalas','graficos','produtividade','abc','eficiencia','perdas','velocidades','cad-clientes','cad-vendedores','cad-caixas','cad-papeis','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores','exp-carregar','entregas-vivo','manutencoes','exp-historico'],
     importar: true, novoPedido: true, editarPedido: true, excluirPedido: true,
     mudarStatus: true, exportarOperador: true, config: true, backup: true,
     setupClientes: true, reordenar: true, etiquetas: true, usuarios: true
   },
   pcp: {
-    tabs: ['dashboard','relatorio','entregas','estoque','orcamentos','orc-solicitacoes','orc-onda-config','escalas','graficos','produtividade','abc','eficiencia','perdas','velocidades','cad-clientes','cad-caixas','cad-papeis','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores','exp-carregar','entregas-vivo','manutencoes','exp-historico'],
+    tabs: ['dashboard','relatorio','pcp','entregas','estoque','orcamentos','orc-solicitacoes','orc-onda-config','escalas','graficos','produtividade','abc','eficiencia','perdas','velocidades','cad-clientes','cad-caixas','cad-papeis','cad-chapas','cad-operadores','cad-laudistas','cad-motoristas','cad-caminhoes','cad-expedidores','exp-carregar','entregas-vivo','manutencoes','exp-historico'],
     importar: true, novoPedido: false, editarPedido: false, excluirPedido: false,
     mudarStatus: true, exportarOperador: false, config: false, backup: false,
     setupClientes: false, reordenar: true, etiquetas: false, usuarios: false
   },
   visualizador: {
-    tabs: ['dashboard','relatorio','entregas','graficos','produtividade','abc','eficiencia','perdas','velocidades'],
+    tabs: ['dashboard','relatorio','pcp','entregas','graficos','produtividade','abc','eficiencia','perdas','velocidades'],
     importar: false, novoPedido: false, editarPedido: false, excluirPedido: false,
     mudarStatus: false, exportarOperador: false, config: false, backup: false,
     setupClientes: false, reordenar: false, etiquetas: false, usuarios: false
