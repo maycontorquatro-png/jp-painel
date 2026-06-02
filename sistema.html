@@ -14,7 +14,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" crossorigin="anonymous"></script>
-<!-- v2.13.0 — exportar PDF do cronograma do dia (clona o visual da tela em modo claro) -->
+<!-- v2.13.0 — exportar PDF do cronograma do dia + importação de ficha .xls (código=nome, cores, gramatura, medida largura×comprimento) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <style>
@@ -1599,8 +1599,8 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
 
   <div style="display:flex;gap:10px;margin:14px 0;flex-wrap:wrap">
     <button class="btn btn-primary" id="btn-nova-caixa">➕ Nova Caixa</button>
-    <button class="btn btn-ghost" id="btn-import-pdf" style="border-color:rgba(0,159,227,.4);color:#33B5E8">📄 Importar PDF (ficha)</button>
-    <input type="file" id="import-pdf-input" accept="application/pdf,.pdf" multiple style="display:none">
+    <button class="btn btn-ghost" id="btn-import-pdf" style="border-color:rgba(0,159,227,.4);color:#33B5E8">📄 Importar ficha (PDF/XLS)</button>
+    <input type="file" id="import-pdf-input" accept="application/pdf,.pdf,.xls,.xlsx,.xml" multiple style="display:none">
     <input id="cx-cad-busca" placeholder="🔎 Buscar por código, cliente ou faca/clichê..." style="flex:1;min-width:240px">
     <select id="cx-cad-filtro-cliente" style="min-width:160px">
       <option value="">Todos os clientes</option>
@@ -3247,6 +3247,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
         </div>
         <div style="font-size:12px;color:var(--text-2);line-height:1.7">
           🖨 <b>Exportar PDF do cronograma do dia</b>: ao abrir um dia no cronograma, botão "Exportar PDF" gera o cronograma com a mesma cara da tela (linha do tempo, cores e tags), em modo claro pronto pra imprimir ou salvar em PDF.<br>
+          📥 <b>Importação de ficha aceita .XLS</b> além de PDF (Cadastros → Caixas): lê o .xls exportado do sistema direto, código = nome da caixa, cliente completo, gramatura pelo valor real do papel, cores certas (sem cinza fantasma, reaproveita as cadastradas) e medida da chapa como largura × comprimento.<br>
         </div>
       </div>
 
@@ -11991,6 +11992,26 @@ async function extrairLinhasPDF(file){
   }
   return linhas;
 }
+// Lê ficha em .xls/.xml (SpreadsheetML do Excel) e devolve as MESMAS linhas que o PDF
+// (linha de rótulos, depois linha de valores). Sem biblioteca — é XML puro.
+async function extrairLinhasXLS(file){
+  const txt = await file.text();
+  if(!/<\s*Workbook|<\?xml/i.test(txt) || !/<\s*Row\b/i.test(txt)){
+    throw new Error('.xls não é XML do Excel (use o arquivo exportado do sistema ou um PDF)');
+  }
+  const deEsc = s => s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&amp;/g,'&');
+  const linhas = [];
+  const rowRe = /<Row\b[^>]*>([\s\S]*?)<\/Row>/gi;
+  const cellRe = /<Data\b[^>]*>([\s\S]*?)<\/Data>/gi;
+  let rm;
+  while((rm = rowRe.exec(txt))){
+    const cells = []; let cm; cellRe.lastIndex = 0;
+    while((cm = cellRe.exec(rm[1]))) cells.push(deEsc(cm[1]));
+    const l = cells.join(' ').replace(/\s+/g,' ').trim();
+    if(l) linhas.push(l);
+  }
+  return linhas;
+}
 // Parser da ficha Frisokar (só dados de entrada + valores do PDF p/ comparar)
 function parseFichaFrisokar(linhas){
   const apos = re => { const i=linhas.findIndex(l=>re.test(l)); return i>=0?(linhas[i+1]||''):''; };
@@ -12001,12 +12022,21 @@ function parseFichaFrisokar(linhas){
   if(a.length>=6){ d.orelha=a[a.length-1]; d.fechamento=a[a.length-2]; d.laudo=a[a.length-3]; d.amarrado=a[a.length-5]; }
   const b = apos(/Medidas Internas.*Descri/);
   const mm = b.match(/(\d+)\s*[xX]\s*(\d+)\s*[xX]\s*(\d+)/); if(mm){ d.C=+mm[1]; d.L=+mm[2]; d.A=+mm[3]; }
-  d.codigo = (b.match(/-\s*(\d{3,})\s/)||[])[1]||'';
+  // código = NOME da caixa: texto entre "CX - CLIENTE -" e as medidas da folha (ex.: "01 VERDE SLIM", "19403"); fallback p/ número
+  d.codigo = ((b.match(/CX\s*-\s*[^-]+-\s*(.+?)\s+\d+\s*[xX]\s*\d+\s*$/i)||[])[1] || (b.match(/-\s*(\d{3,})\s/)||[])[1] || '').trim();
+  // cliente completo da descrição (entre "CX -" e o próximo "-"); senão mantém o do cabeçalho
+  const _cliDesc = (b.match(/CX\s*-\s*([^-]+?)\s*-/i)||[])[1];
+  if(_cliDesc) d.cliente = _cliDesc.trim();
   const c = apos(/Qualidade Interna.*Onda.*Gramatura/);
   const q = (c.match(/(\d+-[A-Z0-9]+-[A-Z]+)/)||[])[1]||''; const qp = q.split('-');
   d.composicao = qp[1]||''; d.onda = qp[2]||''; d.gramaturaPdf = +((c.match(/(\d+)\s*$/)||[])[1]||0);
-  d.papeis = (d.composicao.match(/([KMTB])(\d+)/g)||[]).map(s=>{ const m=s.match(/([KMTB])(\d+)/); return {cod:s, tipo:{K:'Kraft',M:'Miolo',T:'Test Liner',B:'Branco'}[m[1]], gram:+m[2]*10}; });
-  d.cores = apos(/Primeira Cor.*Quarta Cor/).split(/\s+/).filter(x=>x && x.toUpperCase()!=='N/A');
+  // gramatura: 3 dígitos (K120) = valor direto; 2 dígitos (K12) = abreviado ×10 (fichas antigas)
+  d.papeis = (d.composicao.match(/([KMTB])(\d+)/g)||[]).map(s=>{ const m=s.match(/([KMTB])(\d+)/); const n=+m[2]; return {cod:s, tipo:{K:'Kraft',M:'Miolo',T:'Test Liner',B:'Branco'}[m[1]], gram: n>=100 ? n : n*10}; });
+  // cores: cada cor é "NOME" ou "NOME NN" (tonalidade). Junta o número ao nome anterior e ignora N/A.
+  const _corToks = apos(/Primeira Cor.*Quarta Cor/).split(/\s+/);
+  const _corCols = [];
+  _corToks.forEach(t=>{ if(/^\d{1,3}$/.test(t) && _corCols.length) _corCols[_corCols.length-1] += ' '+t; else if(t) _corCols.push(t); });
+  d.cores = _corCols.filter(x=>x.toUpperCase()!=='N/A');
   const pal = apos(/Medida do Palete.*Filme/);
   d.paleteLC = (pal.match(/(\d+\s*[xX]\s*\d+)/)||[])[1]||'';
   d.filme = (pal.split(/\s+/).pop()||'');
@@ -12075,12 +12105,16 @@ function pdfNum(s){ return +String(s||'').replace(/\./g,'').replace(',','.')||0;
 
 async function importPDFsSelecionados(files){
   if(!files || !files.length) return;
-  if(!window.pdfjsLib){ toast('pdf.js não carregou (sem internet?)','err'); return; }
-  toast('📄 Lendo PDF(s)...');
+  toast('📄 Lendo ficha(s)...');
   const lista = [];
   for(const f of files){
-    try{ const linhas = await extrairLinhasPDF(f); const d = parseFichaFrisokar(linhas); d._arquivo = f.name; lista.push(d); }
-    catch(e){ console.warn('Erro PDF', f.name, e.message); toast('Erro ao ler '+f.name,'err'); }
+    const ehXls = /\.(xls|xlsx|xml)$/i.test(f.name);
+    try{
+      if(!ehXls && !window.pdfjsLib){ toast('pdf.js não carregou (sem internet?)','err'); continue; }
+      const linhas = ehXls ? await extrairLinhasXLS(f) : await extrairLinhasPDF(f);
+      const d = parseFichaFrisokar(linhas); d._arquivo = f.name; lista.push(d);
+    }
+    catch(e){ console.warn('Erro ficha', f.name, e.message); toast('Erro ao ler '+f.name+': '+e.message,'err'); }
   }
   if(!lista.length) return;
   IMPORT_ANALISE = analisarFichas(lista);
@@ -12152,6 +12186,8 @@ async function salvarImport(){
   }
   if(A.coresNovas.length) await salvarCores();
   // 3) chapas + caixas
+  // puxa a cor JÁ cadastrada (mesmo nome) pra reaproveitar o hex; se não existe, deriva do nome
+  const corHexImport = nm => { const ex=(CORES||[]).find(c=>(c.nome||'').toUpperCase()===String(nm||'').toUpperCase()); return ex ? (ex.hex||corHexDe(nm)) : corHexDe(nm); };
   let nCx=0;
   for(const d of A.fichas){
     const camadas = montarCamadasChapa(d.papeis, d.onda); // agora os papéis existem
@@ -12180,10 +12216,10 @@ async function salvarImport(){
       fechamento: fechMap[(d.fechamento||'').toUpperCase()]||'', orelha: orMap[(d.orelha||'').toUpperCase()]||'',
       laudo: simMap[(d.laudo||'').toUpperCase()]||'', filme: simMap[(d.filme||'').toUpperCase()]||'',
       amarrado:+d.amarrado||0, alturaPalete:+d.alturaPalete||0, paleteLC:d.paleteLC||'',
-      cor1Nome:d.cores[0]||'', cor1Rgb:d.cores[0]?corHexDe(d.cores[0]):'',
-      cor2Nome:d.cores[1]||'', cor2Rgb:d.cores[1]?corHexDe(d.cores[1]):'',
-      cor3Nome:d.cores[2]||'', cor3Rgb:d.cores[2]?corHexDe(d.cores[2]):'',
-      cor4Nome:d.cores[3]||'', cor4Rgb:d.cores[3]?corHexDe(d.cores[3]):'',
+      cor1Nome:d.cores[0]||'', cor1Rgb:d.cores[0]?corHexImport(d.cores[0]):'',
+      cor2Nome:d.cores[1]||'', cor2Rgb:d.cores[1]?corHexImport(d.cores[1]):'',
+      cor3Nome:d.cores[2]||'', cor3Rgb:d.cores[2]?corHexImport(d.cores[2]):'',
+      cor4Nome:d.cores[3]||'', cor4Rgb:d.cores[3]?corHexImport(d.cores[3]):'',
       origemFichaPdf:d._arquivo||'', atualizadoEm:new Date().toISOString()
     };
     // não duplicar caixa (mesmo código+cliente)
@@ -17173,7 +17209,7 @@ function renderCaixas(){
   tbody.innerHTML = lista
     .sort((a,b) => a.cliente.localeCompare(b.cliente) || a.codigo.localeCompare(b.codigo))
     .map(c => {
-      const medidas = (c.chapaC && c.chapaL) ? `${c.chapaC}×${c.chapaL}` : '—';
+      const medidas = (c.chapaC && c.chapaL) ? `${c.chapaL}×${c.chapaC}` : '—'; // sempre largura × comprimento
       const intParts = [c.intC, c.intL, c.intA].filter(x => x != null && x !== '' && +x > 0);
       const medInternas = intParts.length ? intParts.map(x => +x).join('×') : '—';
       const precoMostrar = (c.preco > 0) ? c.preco : (c.valorUnitCalc > 0 ? c.valorUnitCalc : 0);
