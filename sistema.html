@@ -14,7 +14,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" crossorigin="anonymous"></script>
-<!-- v2.13.0 — exportar PDF do cronograma do dia + importação de ficha .xls (código=nome, cores, gramatura, medida largura×comprimento) -->
+<!-- v2.13.0 — import .xls + PDF do cronograma (dia/semana) + turno extraordinário + cadeia de etapas no cronograma -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <style>
@@ -478,9 +478,17 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
   #print-area .dia-print-meta strong{color:#0f172a}
   #print-area .dia-print-resumo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
   #print-area .dia-print-resumo .dia-kpi{border:1px solid #cbd5e1;border-left:3px solid #009FE3;border-radius:4px;background:#fff;padding:8px 10px}
-  #print-area .dia-print-turnos .dia-turno-bloco{page-break-inside:avoid}
-  #print-area .dia-print-turnos .dia-timeline-item{page-break-inside:avoid;box-shadow:none}
+  /* turno pode fluir entre páginas (é maior que uma folha); só os cartões não quebram no meio */
+  #print-area .dia-print-turnos .dia-turno-bloco{page-break-inside:auto}
+  #print-area .dia-print-turnos .dia-turno-titulo{page-break-after:avoid}
+  /* Safari não quebra dentro de flex → vira bloco na impressão pra preencher a página */
+  #print-area .dia-print-turnos .dia-timeline{display:block}
+  #print-area .dia-print-turnos .dia-timeline-item{page-break-inside:avoid;box-shadow:none;margin-bottom:4px}
   #print-area .dia-print-foot{margin-top:14px;padding-top:8px;border-top:1px solid #cbd5e1;text-align:center;font-size:8pt;color:#64748b;letter-spacing:1px}
+  /* semana: cada dia numa página */
+  #print-area .dia-print-diasem{page-break-before:always}
+  #print-area .dia-print-diasem:first-of-type{page-break-before:auto}
+  #print-area .dia-print-diatitulo{font-family:'Oswald';font-size:13pt;font-weight:700;color:#0f172a;background:#e2e8f0;padding:6px 10px;border-radius:4px;margin:0 0 10px}
 }
 </style>
 </head>
@@ -2643,7 +2651,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
             <select id="f-roteiro">
               <option value="impressora_coladeira">📦 Coladeira</option>
               <option value="impressora_grampeadeira">📌 Grampeadeira</option>
-              <option value="impressora">— Não tem (caixa simples)</option>
+              <option value="impressora">— Sem acabamento (caixa simples · vai p/ coladeira ou grampeadeira)</option>
             </select>
           </div>
         </div>
@@ -2890,8 +2898,9 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
     </div>
     <div class="modal-foot" style="justify-content:space-between">
       <div style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono'" id="modal-dia-cap-info"></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" id="btn-cronograma-pdf" style="border-color:rgba(0,159,227,.4);color:#33B5E8">🖨 Exportar PDF</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" id="btn-cronograma-pdf" style="border-color:rgba(0,159,227,.4);color:#33B5E8">🖨 Este dia</button>
+        <button class="btn btn-ghost" id="btn-cronograma-pdf-semana" style="border-color:rgba(0,159,227,.4);color:#33B5E8">📅 Semana (7 dias)</button>
         <button class="btn btn-ghost" data-close="modal-dia">Fechar</button>
       </div>
     </div>
@@ -3246,8 +3255,10 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
           <div style="font-size:11px;color:var(--text-4)">02/06/2026</div>
         </div>
         <div style="font-size:12px;color:var(--text-2);line-height:1.7">
-          🖨 <b>Exportar PDF do cronograma do dia</b>: ao abrir um dia no cronograma, botão "Exportar PDF" gera o cronograma com a mesma cara da tela (linha do tempo, cores e tags), em modo claro pronto pra imprimir ou salvar em PDF.<br>
-          📥 <b>Importação de ficha aceita .XLS</b> além de PDF (Cadastros → Caixas): lê o .xls exportado do sistema direto, código = nome da caixa, cliente completo, gramatura pelo valor real do papel, cores certas (sem cinza fantasma, reaproveita as cadastradas) e medida da chapa como largura × comprimento.<br>
+          📥 <b>Importação de ficha aceita .XLS</b> além de PDF (Cadastros → Caixas), lendo o arquivo do sistema direto.<br>
+          🖨 <b>Exportar PDF do cronograma</b>: botão "Este dia" e "Semana (7 dias)" — com a mesma cara da tela, abre numa janela rápida pra imprimir/salvar em PDF.<br>
+          ⚡ <b>Turno extraordinário</b> (Config): liga/desliga turnos estendidos (ex: 12h, 05→17 e 17→05) e o cronograma recalcula com mais horas/dia → menos atrasos. Almoço por horário fixo de cada turno.<br>
+          🔗 <b>Cadeia clara no cronograma</b>: badge "Esperando coladeira/grampeadeira" com a qtd que já saiu da slotter, qtd do pedido ao lado do nome, e chapas em vermelho quando vierem abaixo do pedido.<br>
         </div>
       </div>
 
@@ -3892,7 +3903,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
 <div class="modal-bg" id="modal-config">
   <div class="modal" style="max-width:520px">
     <div class="modal-head"><div class="modal-title">Configuração de Turnos & Capacidade</div><button class="modal-close" data-close="modal-config">×</button></div>
-    <div class="modal-body">
+    <div class="modal-body" style="max-height:72vh;overflow-y:auto">
       <div class="form-grid-2">
         <div><label>Horas por turno</label><input type="number" id="cfg-horas" step="0.1" min="1" max="24"><div class="hint">Ex: 8.8 = 8h48</div></div>
         <div><label>Turnos por dia</label><input type="number" id="cfg-turnos" min="1" max="3"></div>
@@ -3905,9 +3916,44 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
         <div><label>Almoço por turno (min)</label><input type="number" id="cfg-almoco" min="0" max="120"><div class="hint">1h padrão · escalonado por turno</div></div>
         <div><label>Setup padrão (min)</label><input type="number" id="cfg-setup" min="0" max="240"><div class="hint">Usado quando cliente não tem setup cadastrado</div></div>
       </div>
+      <div class="form-grid-2">
+        <div><label>Almoço — horário Turno 1</label><input type="time" id="cfg-almoco-t1"><div class="hint">Vazio = 4h após o início</div></div>
+        <div><label>Almoço — horário Turno 2</label><input type="time" id="cfg-almoco-t2"><div class="hint">Horário fixo do almoço</div></div>
+      </div>
       <div style="background:var(--bg-2);border:1px dashed var(--line);border-radius:8px;padding:12px;margin-top:10px">
-        <div class="hint" style="margin-bottom:4px">Capacidade efetiva por dia:</div>
+        <div class="hint" style="margin-bottom:4px">Capacidade normal por dia:</div>
         <div style="font-family:'Oswald';font-size:18px;color:var(--amber-2);font-weight:700" id="cfg-cap-info">—</div>
+      </div>
+
+      <!-- ⚡ TURNO EXTRAORDINÁRIO -->
+      <div style="margin-top:16px;border:1px solid rgba(245,158,11,.4);border-radius:10px;padding:14px;background:rgba(245,158,11,.06)">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin:0">
+          <input type="checkbox" id="cfg-extra-ativo" style="width:auto">
+          <span style="font-family:'Oswald';font-size:15px;font-weight:700;color:#fbbf24">⚡ Turno Extraordinário</span>
+        </label>
+        <div class="hint" style="margin:6px 0 12px">Quando ligado, o cronograma usa estes turnos estendidos (ex: 12h, 05→17 e 17→05) — mais horas/dia, entrega em menos dias. Desligado, volta ao normal sem perder nada.</div>
+        <div id="cfg-extra-campos">
+          <div class="form-grid-2">
+            <div><label>Horas por turno</label><input type="number" id="cfg-ex-horas" step="0.1" min="1" max="24"></div>
+            <div><label>Turnos por dia</label><input type="number" id="cfg-ex-turnos" min="1" max="3"></div>
+          </div>
+          <div class="form-grid-2">
+            <div><label>Início Turno 1</label><input type="time" id="cfg-ex-t1"></div>
+            <div><label>Início Turno 2</label><input type="time" id="cfg-ex-t2"></div>
+          </div>
+          <div class="form-grid-2">
+            <div><label>Almoço por turno (min)</label><input type="number" id="cfg-ex-almoco" min="0" max="120"></div>
+            <div></div>
+          </div>
+          <div class="form-grid-2">
+            <div><label>Almoço — horário Turno 1</label><input type="time" id="cfg-ex-almoco-t1"></div>
+            <div><label>Almoço — horário Turno 2</label><input type="time" id="cfg-ex-almoco-t2"></div>
+          </div>
+          <div style="background:var(--bg-2);border:1px dashed rgba(245,158,11,.4);border-radius:8px;padding:10px;margin-top:6px">
+            <div class="hint" style="margin-bottom:2px">Capacidade extraordinária por dia:</div>
+            <div style="font-family:'Oswald';font-size:16px;color:#fbbf24;font-weight:700" id="cfg-ex-cap-info">—</div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -4232,8 +4278,12 @@ let STATE = {
     inicioT1:'07:00',
     inicioT2:'15:48',
     almocoMinutos:60,
-    almocoDepoisHoras:4, // almoço começa após 4h de trabalho no turno
-    setupPadraoMin:30
+    almocoDepoisHoras:4, // fallback: almoço após 4h (quando não há horário fixo)
+    almocoInicioT1:'', // horário fixo do almoço por turno (vazio = usa almocoDepoisHoras)
+    almocoInicioT2:'',
+    setupPadraoMin:30,
+    extraordinarioAtivo:false, // ⚡ liga o perfil de turno estendido
+    extra:{ horasTurno:12, turnosPorDia:2, inicioT1:'05:00', inicioT2:'17:00', almocoMinutos:60, almocoInicioT1:'', almocoInicioT2:'' }
   },
   setupClientes: {},
   ordemProducao: [], // IDs dos pedidos na ordem custom (vazio = auto por data)
@@ -4779,10 +4829,17 @@ function excluirPedido(pid){
 // ============================================
 // CRONOGRAMA INTELIGENTE
 // ============================================
+// Perfil de turno ATIVO: normal ou extraordinário (quando ligado). Todo o cronograma lê daqui.
+function cfgAtivo(){
+  const c = STATE.config || {};
+  if(c.extraordinarioAtivo && c.extra) return { ...c, ...c.extra, extraordinarioAtivo:true };
+  return c;
+}
 function calcCapacidadeDiariaHoras(){
   // Capacidade líquida = (horas turno × turnos) - (almoço × turnos)
-  const bruto = STATE.config.horasTurno * STATE.config.turnosPorDia;
-  const almoco = ((STATE.config.almocoMinutos||60)/60) * STATE.config.turnosPorDia;
+  const cfg = cfgAtivo();
+  const bruto = (cfg.horasTurno||0) * (cfg.turnosPorDia||0);
+  const almoco = ((cfg.almocoMinutos||60)/60) * (cfg.turnosPorDia||0);
   return bruto - almoco;
 }
 
@@ -4932,7 +4989,7 @@ function distribuirPedidos(){
 // Não altera o cronograma atual — é um cálculo paralelo só pra previsão.
 function calcPrevisaoEntregas(){
   const capDiariaH = calcCapacidadeDiariaHoras();
-  const cfg = STATE.config || {};
+  const cfg = cfgAtivo();
   const turnos = cfg.turnosPorDia || 2;
   const horasEfTurno = (cfg.horasTurno || 8.8) - ((cfg.almocoMinutos||60)/60); // horas produtivas por turno
   const pipeline = ['programado','material_disponivel','em_producao','reprogramado'];
@@ -5755,7 +5812,7 @@ function recalcPedidoModal(){
   const val=+document.getElementById('f-valor').value||0;
   const chapas=+document.getElementById('f-chapas').value||0;
   if(!q||!cxh){document.getElementById('c-tempo').textContent='—';document.getElementById('c-turnos').textContent='—'}
-  else {const h=q/cxh,t=h/STATE.config.horasTurno;document.getElementById('c-tempo').textContent=fmtH(h);document.getElementById('c-turnos').textContent=t.toFixed(2)}
+  else {const h=q/cxh,t=h/(cfgAtivo().horasTurno||8.8);document.getElementById('c-tempo').textContent=fmtH(h);document.getElementById('c-turnos').textContent=t.toFixed(2)}
   document.getElementById('c-total').textContent=(q&&val)?fmtBRL(q*val):'—';
 
   // Cálculo shortfall de chapas
@@ -6014,35 +6071,58 @@ document.getElementById('btn-salvar-registro').onclick=()=>{
 
 // MODAL CONFIG
 document.getElementById('btn-config').onclick=()=>{
-  document.getElementById('cfg-horas').value=STATE.config.horasTurno;
-  document.getElementById('cfg-turnos').value=STATE.config.turnosPorDia;
-  document.getElementById('cfg-t1').value=STATE.config.inicioT1;
-  document.getElementById('cfg-t2').value=STATE.config.inicioT2;
-  document.getElementById('cfg-almoco').value=STATE.config.almocoMinutos||60;
-  document.getElementById('cfg-setup').value=STATE.config.setupPadraoMin||30;
+  const c=STATE.config, e=c.extra||{};
+  document.getElementById('cfg-horas').value=c.horasTurno;
+  document.getElementById('cfg-turnos').value=c.turnosPorDia;
+  document.getElementById('cfg-t1').value=c.inicioT1;
+  document.getElementById('cfg-t2').value=c.inicioT2;
+  document.getElementById('cfg-almoco').value=c.almocoMinutos||60;
+  document.getElementById('cfg-almoco-t1').value=c.almocoInicioT1||'';
+  document.getElementById('cfg-almoco-t2').value=c.almocoInicioT2||'';
+  document.getElementById('cfg-setup').value=c.setupPadraoMin||30;
+  document.getElementById('cfg-extra-ativo').checked=!!c.extraordinarioAtivo;
+  document.getElementById('cfg-ex-horas').value=e.horasTurno||12;
+  document.getElementById('cfg-ex-turnos').value=e.turnosPorDia||2;
+  document.getElementById('cfg-ex-t1').value=e.inicioT1||'05:00';
+  document.getElementById('cfg-ex-t2').value=e.inicioT2||'17:00';
+  document.getElementById('cfg-ex-almoco').value=e.almocoMinutos!=null?e.almocoMinutos:60;
+  document.getElementById('cfg-ex-almoco-t1').value=e.almocoInicioT1||'';
+  document.getElementById('cfg-ex-almoco-t2').value=e.almocoInicioT2||'';
   recalcConfig();abrirModal('modal-config');
 };
 function recalcConfig(){
-  const h=+document.getElementById('cfg-horas').value||0;
-  const t=+document.getElementById('cfg-turnos').value||0;
-  const almoco=+document.getElementById('cfg-almoco').value||0;
-  const totalHoras = h*t;
-  const almocoTotal = (almoco/60)*t;
-  const efetivo = totalHoras - almocoTotal;
-  document.getElementById('cfg-cap-info').innerHTML =
-    `${fmtH(efetivo)} de produção líquida<br>` +
-    `<span style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono'">(${fmtH(totalHoras)} brutas − ${fmtH(almocoTotal)} almoço)</span>`;
+  const capTxt=(h,t,a)=>{const tot=h*t,alm=(a/60)*t,ef=tot-alm; return `${fmtH(ef)} de produção líquida<br><span style="font-size:11px;color:var(--text-3);font-family:'JetBrains Mono'">(${fmtH(tot)} brutas − ${fmtH(alm)} almoço)</span>`;};
+  const v=id=>+document.getElementById(id).value||0;
+  const ativo=document.getElementById('cfg-extra-ativo').checked;
+  document.getElementById('cfg-cap-info').innerHTML = capTxt(v('cfg-horas'),v('cfg-turnos'),v('cfg-almoco')) + (ativo?'':' <span style="color:#22c55e;font-size:11px;font-weight:700">◀ EM USO</span>');
+  document.getElementById('cfg-ex-cap-info').innerHTML = capTxt(v('cfg-ex-horas'),v('cfg-ex-turnos'),v('cfg-ex-almoco')) + (ativo?' <span style="color:#22c55e;font-size:11px;font-weight:700">◀ EM USO</span>':'');
+  document.getElementById('cfg-extra-campos').style.opacity = ativo?'1':'.55';
 }
-['cfg-horas','cfg-turnos','cfg-almoco'].forEach(id=>document.getElementById(id).oninput=recalcConfig);
+['cfg-horas','cfg-turnos','cfg-almoco','cfg-ex-horas','cfg-ex-turnos','cfg-ex-almoco'].forEach(id=>{const el=document.getElementById(id); if(el) el.oninput=recalcConfig;});
+document.getElementById('cfg-extra-ativo').onchange=recalcConfig;
 document.getElementById('btn-salvar-config').onclick=()=>{
   STATE.config.horasTurno=+document.getElementById('cfg-horas').value;
   STATE.config.turnosPorDia=+document.getElementById('cfg-turnos').value;
   STATE.config.inicioT1=document.getElementById('cfg-t1').value;
   STATE.config.inicioT2=document.getElementById('cfg-t2').value;
   STATE.config.almocoMinutos=+document.getElementById('cfg-almoco').value;
+  STATE.config.almocoInicioT1=document.getElementById('cfg-almoco-t1').value;
+  STATE.config.almocoInicioT2=document.getElementById('cfg-almoco-t2').value;
   STATE.config.setupPadraoMin=+document.getElementById('cfg-setup').value;
+  STATE.config.extraordinarioAtivo=document.getElementById('cfg-extra-ativo').checked;
+  STATE.config.extra={
+    horasTurno:+document.getElementById('cfg-ex-horas').value,
+    turnosPorDia:+document.getElementById('cfg-ex-turnos').value,
+    inicioT1:document.getElementById('cfg-ex-t1').value,
+    inicioT2:document.getElementById('cfg-ex-t2').value,
+    almocoMinutos:+document.getElementById('cfg-ex-almoco').value,
+    almocoInicioT1:document.getElementById('cfg-ex-almoco-t1').value,
+    almocoInicioT2:document.getElementById('cfg-ex-almoco-t2').value
+  };
   saveStorage(PK_CONFIG,STATE.config);
-  fecharModal('modal-config');toast('Configuração salva');renderAll();
+  fecharModal('modal-config');
+  toast(STATE.config.extraordinarioAtivo?'⚡ Turno extraordinário ATIVO':'Configuração salva');
+  renderAll();
 };
 
 // MODAL SETUP CLIENTES
@@ -7654,7 +7734,8 @@ function abrirPopupDia(ds, alocacoes, capDiariaH){
   STATE._modalDiaDs = ds;
   STATE._modalDiaCap = capDiariaH;
   // v1.9.6 — Forçar reload dos progressos no Firebase (caso o listener ainda nao tenha rodado)
-  if(typeof db !== 'undefined' && db){
+  // _cronoBatch: pulando no modo "gerar semana" (evita 7 idas na rede + reabrir o modal)
+  if(!STATE._cronoBatch && typeof db !== 'undefined' && db){
     db.collection('jp_sistema').doc('progressos_operador').get().then(d => {
       if(d.exists && d.data().progressos){
         const novo = d.data().progressos;
@@ -7701,8 +7782,8 @@ function abrirPopupDia(ds, alocacoes, capDiariaH){
   document.getElementById('modal-dia-cap-info').textContent =
     `${ocupacao.toFixed(0)}% ocupado · ${items.length} pedido${items.length!==1?'s':''} programado${items.length!==1?'s':''}`;
 
-  // Construir linha do tempo por turno
-  const cfg = STATE.config;
+  // Construir linha do tempo por turno (usa o perfil ATIVO: normal ou extraordinário)
+  const cfg = cfgAtivo();
   const turnosPorDia = cfg.turnosPorDia || 2;
   const horasTurno = cfg.horasTurno || 8.8;
   const almocoH = (cfg.almocoMinutos || 60) / 60;
@@ -7725,7 +7806,7 @@ function abrirPopupDia(ds, alocacoes, capDiariaH){
 
   // Horários de início dos turnos
   const horasInicioTurno = [cfg.inicioT1 || '07:00', cfg.inicioT2 || '15:48'];
-  const almocoDepoisHoras = cfg.almocoDepoisHoras || 4; // almoço após Xh de trabalho
+  const almocoInicioTurno = [cfg.almocoInicioT1, cfg.almocoInicioT2]; // horário fixo do almoço por turno (vazio = usa "depois de X horas")
   function parseHora(s){ const [h,m]=(s||'07:00').split(':').map(Number);return h+m/60; }
   function hrFmt(h){ const hh=Math.floor(h%24),mm=Math.round((h%1)*60); return `${String(hh).padStart(2,'0')}:${String(mm<60?mm:0).padStart(2,'0')}`; }
 
@@ -7733,6 +7814,9 @@ function abrirPopupDia(ds, alocacoes, capDiariaH){
   const printTurnos = [];
   for(let t=0; t<turnosPorDia; t++){
     const inicioH = parseHora(horasInicioTurno[t]);
+    // almoço: horário fixo do turno se definido; senão "depois de X horas" (fallback)
+    let almocoDepoisHoras = (cfg.almocoDepoisHoras || 4);
+    if(almocoInicioTurno[t]){ let dep = parseHora(almocoInicioTurno[t]) - inicioH; if(dep < 0) dep += 24; almocoDepoisHoras = dep; }
     const fimH = inicioH + horasTurno; // horário real de saída (inclui almoço)
     const almocoClockStart = inicioH + almocoDepoisHoras; // almoço começa nesse horário
 
@@ -7812,7 +7896,7 @@ function abrirPopupDia(ds, alocacoes, capDiariaH){
               <div class="dia-tl-top">
                 <div>
                   <div class="dia-tl-cliente" style="color:${cor}">${escapeHtml(it.cliente)} <span style="font-size:10px;opacity:.6">(parte 1/2)</span></div>
-                  <div class="dia-tl-codigo">${escapeHtml(it.codigo||'—')}</div>
+                  <div class="dia-tl-codigo">${escapeHtml(it.codigo||'—')}${p?` <span style="color:var(--text-3);font-weight:400;font-size:11px">· ${fmt(p.qtd||0)} cx</span>`:''}</div>
                   <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${badgeFase_p1}${badgeOp_p1}</div>
                 </div>
                 ${it.atrasaEntrega?`<span class="dia-tl-badge red">⚠ ATRASA</span>`:''}
@@ -7848,7 +7932,7 @@ function abrirPopupDia(ds, alocacoes, capDiariaH){
               <div class="dia-tl-top">
                 <div>
                   <div class="dia-tl-cliente" style="color:${cor}">${escapeHtml(it.cliente)} <span style="font-size:10px;opacity:.6">(parte 2/2)</span></div>
-                  <div class="dia-tl-codigo">${escapeHtml(it.codigo||'—')}</div>
+                  <div class="dia-tl-codigo">${escapeHtml(it.codigo||'—')}${p?` <span style="color:var(--text-3);font-weight:400;font-size:11px">· ${fmt(p.qtd||0)} cx</span>`:''}</div>
                   <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${badgeFase_p2}${badgeOp_p2}</div>
                 </div>
                 ${diasEntreg!=null&&diasEntreg>0?`<span class="dia-tl-badge">Entrega em ${diasEntreg}d</span>`:''}
@@ -7871,12 +7955,15 @@ function abrirPopupDia(ds, alocacoes, capDiariaH){
         const fimPedido = horaAtual + it.horasNoDia;
         const badgeFase_n = renderBadgeFase(it.pid, it.qtdPrev||p?.qtd);
         const badgeOp_n = renderBadgeOperador(it.pid);
+        const proxEt_n = badgeProxEtapa(it.pid);
+        const chapas_n = badgeChapasDisp(it.pid);
         html += `<div class="dia-timeline-item tem-cor" style="--item-cor:${cor}">
           <div class="dia-tl-top">
             <div>
               <div class="dia-tl-cliente" style="color:${cor}">${escapeHtml(it.cliente)}</div>
-              <div class="dia-tl-codigo">${escapeHtml(it.codigo||'—')}</div>
-              <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${badgeFase_n}${badgeOp_n}</div>
+              <div class="dia-tl-codigo">${escapeHtml(it.codigo||'—')}${p?` <span style="color:var(--text-3);font-weight:400;font-size:11px">· ${fmt(p.qtd||0)} cx</span>`:''}</div>
+              <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${badgeFase_n}${chapas_n}${badgeOp_n}</div>
+              ${proxEt_n?`<div style="margin-top:5px">${proxEt_n}</div>`:''}
             </div>
             <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
               ${it.finalizando?`<span class="dia-tl-badge" style="background:rgba(34,197,94,.18);color:#22c55e;border:1px solid rgba(34,197,94,.4)">✅ FINALIZANDO</span>`:''}
@@ -7923,7 +8010,7 @@ function abrirPopupDia(ds, alocacoes, capDiariaH){
     ocupacao: ocupacao.toFixed(0),
     turnos: printTurnos
   };
-  abrirModal('modal-dia');
+  if(!STATE._cronoBatch) abrirModal('modal-dia');
 }
 // Gera o HTML de impressão do dia do cronograma CLONANDO o visual da tela
 // (mesma linha do tempo, cores, barras e tags — só vira "modo claro" via .dia-print)
@@ -7953,13 +8040,110 @@ function gerarHtmlCronogramaDia(){
     <div class="dia-print-foot">JP EMBALAGENS · Cronograma gerado pelo Sistema de Controle de Produção</div>
   </div>`;
 }
+// Abre o cronograma numa janela enxuta e imprime — MUITO mais rápido que window.print()
+// na página inteira (~1MB). A janela carrega só o cronograma → diálogo de impressão na hora.
+function abrirJanelaImpressao(html){
+  const estilos = [...document.querySelectorAll('style')].map(s=>s.textContent).join('\n');
+  const extra = `
+    @page{size:A4 portrait;margin:10mm}
+    html,body{margin:0;background:#fff}
+    #print-area{display:block !important}
+    #print-area .dia-print{-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#0f172a;font-family:'Outfit',Arial,sans-serif;
+      --bg-0:#fff;--bg-1:#fff;--bg-2:#fff;--bg-3:#f1f5f9;--line:#cbd5e1;--line-soft:#e2e8f0;
+      --text:#0f172a;--text-2:#1e293b;--text-3:#475569;--text-4:#64748b;--amber:#b45309;--amber-2:#b45309;--green:#16a34a;--green-2:#16a34a;--blue:#2563eb;--red:#dc2626;}
+    #print-area .dia-print *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #print-area .dia-print-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #009FE3;padding-bottom:8px;margin-bottom:14px}
+    #print-area .dia-print-title{font-family:'Oswald';font-size:18pt;font-weight:700;color:#0f172a;line-height:1}
+    #print-area .dia-print-sub{font-size:9pt;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-top:2px}
+    #print-area .dia-print-meta{text-align:right;font-size:9pt;color:#475569;line-height:1.5}
+    #print-area .dia-print-meta strong{color:#0f172a}
+    #print-area .dia-print-resumo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+    #print-area .dia-print-resumo .dia-kpi{border:1px solid #cbd5e1;border-left:3px solid #009FE3;border-radius:4px;background:#fff;padding:8px 10px}
+    #print-area .dia-print-turnos .dia-turno-bloco{page-break-inside:auto}
+    #print-area .dia-print-turnos .dia-timeline{display:block}
+    #print-area .dia-print-turnos .dia-timeline-item{page-break-inside:avoid;box-shadow:none;margin-bottom:4px}
+    #print-area .dia-print-foot{margin-top:14px;padding-top:8px;border-top:1px solid #cbd5e1;text-align:center;font-size:8pt;color:#64748b;letter-spacing:1px}
+    #print-area .dia-print-diasem{page-break-before:always}
+    #print-area .dia-print-diasem:first-of-type{page-break-before:auto}
+    #print-area .dia-print-diatitulo{font-family:'Oswald';font-size:13pt;font-weight:700;color:#0f172a;background:#e2e8f0;padding:6px 10px;border-radius:4px;margin:0 0 10px}`;
+  const w = window.open('', 'jp_print', 'width=920,height=720');
+  if(!w){ toast('Libere os popups do navegador pra exportar o PDF','err'); return false; }
+  w.document.open();
+  w.document.write('<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><title>Cronograma · JP Embalagens</title>'+
+    '<style>'+estilos+'</style><style>'+extra+'</style></head><body><div id="print-area">'+html+'</div></body></html>');
+  w.document.close();
+  w.focus();
+  w.onload = ()=> setTimeout(()=>{ try{ w.print(); }catch(e){} }, 120);
+  try{ w.onafterprint = ()=> w.close(); }catch(e){}
+  return true;
+}
 function imprimirCronogramaDia(){
   const html = gerarHtmlCronogramaDia();
   if(!html){ toast('Abra um dia do cronograma primeiro','err'); return; }
-  document.getElementById('print-area').innerHTML = html;
-  setTimeout(()=>window.print(), 200);
+  abrirJanelaImpressao(html);
 }
 document.getElementById('btn-cronograma-pdf')?.addEventListener('click', imprimirCronogramaDia);
+
+// PDF da SEMANA — 7 dias a partir do dia aberto. Reaproveita abrirPopupDia pra
+// renderizar cada dia no modal e captura o HTML (mesmo visual do dia).
+function gerarHtmlCronogramaSemana(dsInicio){
+  if(!dsInicio) return '';
+  const dist = distribuirPedidos();
+  const start = new Date(dsInicio+'T00:00:00');
+  const fix = s => String(s||'').replace(/#fcd34d/g,'#b45309');
+  // guarda o conteúdo atual do modal pra restaurar depois (NÃO fecha o cronograma)
+  const elTit=document.getElementById('modal-dia-titulo'), elRes=document.getElementById('modal-dia-resumo'),
+        elTur=document.getElementById('modal-dia-turnos'), elCap=document.getElementById('modal-dia-cap-info');
+  const orig = { ds: STATE._modalDiaDs, tit: elTit.innerHTML, res: elRes.innerHTML, tur: elTur.innerHTML, cap: elCap.innerHTML };
+  const dias = [];
+  STATE._cronoBatch = true; // render rápido: sem Firebase, sem reabrir modal
+  try{
+    for(let i=0;i<7;i++){
+      const d = new Date(start); d.setDate(start.getDate()+i);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      abrirPopupDia(ds, dist.alocacoes, dist.capDiariaH); // renderiza no modal (reuso da lógica)
+      dias.push({
+        titulo: (document.getElementById('modal-dia-titulo')||{}).textContent || '',
+        resumoHTML: (document.getElementById('modal-dia-resumo')||{}).innerHTML || '',
+        turnosHTML: (document.getElementById('modal-dia-turnos')||{}).innerHTML || ''
+      });
+    }
+  } finally { STATE._cronoBatch = false; }
+  // restaura o dia que estava aberto e MANTÉM o cronograma aberto (só imprime)
+  elTit.innerHTML=orig.tit; elRes.innerHTML=orig.res; elTur.innerHTML=orig.tur; elCap.innerHTML=orig.cap;
+  STATE._modalDiaDs = orig.ds;
+  const dt = new Date();
+  const dFmt = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+  const hFmt = `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+  const periodo = `${dias[0].titulo} → ${dias[dias.length-1].titulo}`;
+  let html = `<div class="dia-print">
+    <div class="dia-print-head">
+      <div>
+        <div class="dia-print-title">Cronograma da Semana</div>
+        <div class="dia-print-sub">JP Embalagens · Controle de Produção</div>
+      </div>
+      <div class="dia-print-meta">
+        Emitido em <strong>${dFmt}</strong> às <strong>${hFmt}</strong><br>7 dias: <strong>${escapeHtml(periodo)}</strong>
+      </div>
+    </div>`;
+  dias.forEach(dd=>{
+    html += `<div class="dia-print-diasem">
+      <div class="dia-print-diatitulo">${escapeHtml(dd.titulo)}</div>
+      <div class="dia-print-resumo">${fix(dd.resumoHTML)}</div>
+      <div class="dia-print-turnos">${fix(dd.turnosHTML)}</div>
+    </div>`;
+  });
+  html += `<div class="dia-print-foot">JP EMBALAGENS · Cronograma da semana gerado pelo Sistema de Controle de Produção</div></div>`;
+  return html;
+}
+function imprimirCronogramaSemana(){
+  const ds = STATE._modalDiaDs;
+  if(!ds){ toast('Abra um dia do cronograma primeiro','err'); return; }
+  const html = gerarHtmlCronogramaSemana(ds);
+  if(!html){ toast('Nada pra exportar','err'); return; }
+  abrirJanelaImpressao(html);
+}
+document.getElementById('btn-cronograma-pdf-semana')?.addEventListener('click', imprimirCronogramaSemana);
 
 // =============================================
 // MODAL DE REORDENAÇÃO DE PRODUÇÃO
@@ -8300,6 +8484,37 @@ function renderBadgeOperador(pedidoId){
   const f = getFaseDoPedido(pedidoId);
   if(!f.operador) return '';
   return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--text-3);padding:2px 8px;border-radius:10px;font-size:10px;font-family:'JetBrains Mono';white-space:nowrap" title="Operador responsável">👤 ${escapeHtml(f.operador)}</span>`;
+}
+// Quando a impressão terminou mas falta o acabamento, mostra a próxima etapa da cadeia
+function badgeProxEtapa(pedidoId){
+  const p = STATE.pedidos.find(x=>x.id===pedidoId); if(!p) return '';
+  if(p.etapas?.impressora?.status !== 'concluido') return ''; // ainda imprimindo
+  const roteiro = p.roteiro || 'impressora_coladeira';
+  let nome, fechOk;
+  if(roteiro === 'impressora'){ // caixa simples: finaliza com coladeira OU grampeadeira
+    fechOk = (p.etapas?.coladeira?.status === 'concluido') || (p.etapas?.grampeadeira?.status === 'concluido');
+    nome = 'finalização';
+  } else if(roteiro === 'impressora_grampeadeira'){
+    fechOk = p.etapas?.grampeadeira?.status === 'concluido'; nome = 'grampeadeira';
+  } else {
+    fechOk = p.etapas?.coladeira?.status === 'concluido'; nome = 'coladeira';
+  }
+  if(fechOk) return ''; // acabamento já feito → não está esperando
+  // qtd já produzida na 1ª etapa (slotter/impressora ou corte e vinco), esperando o acabamento
+  const regs = p.registros||[]; let qImp=0, qCV=0;
+  regs.forEach(r=>{ const e=etapaDoRegistro(r); if(e==='impressora') qImp+=(+r.qtd||0); else if(e==='corte_vinco') qCV+=(+r.qtd||0); });
+  const q = qImp || qCV || (+p.etapas?.impressora?.qtd||0);
+  const qtxt = q>0 ? ` · ${fmt(q)} cx` : '';
+  return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.35);color:#fbbf24;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;font-family:'JetBrains Mono';white-space:nowrap" title="Caixas já saídas da slotter/corte aguardando o acabamento">⏳ Esperando ${nome}${qtxt}</span>`;
+}
+// Mostra quantas chapas realmente vieram quando o material está disponível (vermelho = abaixo do pedido)
+function badgeChapasDisp(pedidoId){
+  const p = STATE.pedidos.find(x=>x.id===pedidoId); if(!p) return '';
+  if(p.statusOp !== 'material_disponivel') return '';
+  const ch = +p.chapasDisponiveis || 0; if(!ch) return '';
+  const falta = ch < (+p.qtd||0); // chapas abaixo do pedido → vermelho (faltou material)
+  const c = falta ? ['rgba(239,68,68,.15)','rgba(239,68,68,.4)','#fca5a5'] : ['rgba(16,185,129,.15)','rgba(16,185,129,.35)','#6ee7b7'];
+  return `<span style="display:inline-flex;align-items:center;gap:4px;background:${c[0]};border:1px solid ${c[1]};color:${c[2]};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;font-family:'JetBrains Mono';white-space:nowrap" title="${falta?'Chapas abaixo do pedido':'Chapas que realmente chegaram'}">📦 ${fmt(ch)} chapas</span>`;
 }
 
 // CSS de animação (injetado uma vez)
@@ -9483,7 +9698,7 @@ function processarFinalizacaoPedido(p, registro){
 
   let todasOk = false;
   if(roteiro === 'impressora'){
-    // Sem acabamento: precisa impressora E (coladeira OU grampeadeira)
+    // Caixa simples / sem acabamento: vai pros 2 operadores; finaliza com coladeira OU grampeadeira
     todasOk = impressoraOk && (coladeiraOk || grampeadeiraOk);
   } else if(roteiro === 'impressora_coladeira'){
     todasOk = impressoraOk && coladeiraOk;
