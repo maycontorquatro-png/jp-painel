@@ -269,6 +269,21 @@ body {
 .btn-cancelar:hover {
   background: rgba(255,255,255,.1);
 }
+/* Botão "instalar/QR" no canto do card + modal de compartilhamento */
+.card-qr{position:absolute;top:10px;right:10px;z-index:3;width:38px;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:17px;display:grid;place-items:center;cursor:pointer;line-height:1}
+.card-qr:hover{background:rgba(0,159,227,.25);border-color:#33B5E8}
+.qr-ov{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9999;display:none;align-items:center;justify-content:center;padding:18px}
+.qr-ov.show{display:flex}
+.qr-box{background:#0f172a;border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:22px;max-width:360px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.55)}
+.qr-box .qr-tit{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:.5px}
+.qr-box .qr-hint{font-size:12px;color:#94a3b8;margin:4px 0 14px}
+.qr-box .qr-img{width:240px;height:240px;background:#fff;border-radius:12px;padding:10px;margin:0 auto;display:block}
+.qr-box .qr-link{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#7dd3fc;word-break:break-all;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px}
+.qr-box .qr-acoes{display:flex;gap:8px;margin-top:14px}
+.qr-box .qr-acoes button{flex:1;min-height:46px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;border:none}
+.qr-box .qr-copiar{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.16)}
+.qr-box .qr-abrir{background:linear-gradient(135deg,#009FE3,#00668E);color:#06283a}
+.qr-box .qr-fechar{margin-top:10px;background:none;border:none;color:#94a3b8;font-size:13px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -344,7 +359,7 @@ body {
   </div>
 
   <div class="footer">
-    <span class="versao">v2.13.0</span> ·
+    <span class="versao">v2.14.0</span> ·
     <span class="status"><span class="dot"></span>Servidor online</span>
   </div>
 </div>
@@ -423,6 +438,57 @@ function cancelarRedirect() {
   window.addEventListener('offline', offline);
   window.addEventListener('online', online);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+
+<!-- Modal de compartilhar/instalar (link + QR por app) -->
+<div class="qr-ov" id="qr-ov" onclick="if(event.target===this)fecharQR()">
+  <div class="qr-box">
+    <div class="qr-tit" id="qr-tit">App</div>
+    <div class="qr-hint">Escaneie no celular ou use o link pra abrir e instalar (adicionar à tela)</div>
+    <img class="qr-img" id="qr-img" alt="QR Code">
+    <div class="qr-link" id="qr-link">—</div>
+    <div class="qr-acoes">
+      <button class="qr-copiar" id="qr-copiar">📋 Copiar link</button>
+      <button class="qr-abrir" id="qr-abrir">↗ Abrir agora</button>
+    </div>
+    <button class="qr-fechar" onclick="fecharQR()">fechar</button>
+  </div>
+</div>
+<script>
+// Link + QR por app — pra mandar o link certo pra cada pessoa (sem passar pelo hub)
+(function(){
+  let urlAtual = '';
+  function abrirQR(arquivo, nome, icone){
+    urlAtual = new URL(arquivo, location.href).href.split('?')[0];
+    document.getElementById('qr-tit').textContent = (icone?icone+' ':'') + nome;
+    document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=6&data=' + encodeURIComponent(urlAtual);
+    document.getElementById('qr-link').textContent = urlAtual;
+    document.getElementById('qr-ov').classList.add('show');
+  }
+  window.fecharQR = ()=> document.getElementById('qr-ov').classList.remove('show');
+  document.getElementById('qr-abrir').onclick = ()=>{ if(urlAtual) location.href = urlAtual; };
+  document.getElementById('qr-copiar').onclick = ()=>{
+    const b = document.getElementById('qr-copiar');
+    const done = ()=>{ b.textContent='✓ Copiado!'; setTimeout(()=>b.textContent='📋 Copiar link',1500); };
+    if(navigator.clipboard) navigator.clipboard.writeText(urlAtual).then(done).catch(()=>{prompt('Copie o link:',urlAtual);});
+    else prompt('Copie o link:', urlAtual);
+  };
+  // injeta o botão 📲 em cada card de app (não no PCP/Sistema, que é restrito)
+  function injetar(){
+    document.querySelectorAll('a.card').forEach(card=>{
+      const href = card.getAttribute('href')||'';
+      if(href==='sistema.html') return; // PCP não precisa de QR de instalação
+      const key = Object.keys(PAINEIS).find(k=>PAINEIS[k].arquivo===href);
+      if(!key) return;
+      const p = PAINEIS[key];
+      const b = document.createElement('button');
+      b.className='card-qr'; b.title='Link/QR pra instalar'; b.textContent='📲';
+      b.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); abrirQR(p.arquivo, p.nome, p.icone); };
+      card.appendChild(b);
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', injetar); else injetar();
 })();
 </script>
 </body>
