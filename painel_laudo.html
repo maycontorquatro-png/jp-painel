@@ -219,7 +219,7 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="logo-titulo">JP EMBALAGENS</div>
     <div style="font-family:'Oswald'; font-size: 13px; color:#009FE3; letter-spacing:5px; margin-top:2px;">CAIXAS DE PAPELÃO</div>
-    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.19.0</span></div>
+    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.21.0</span></div>
   </div>
 
   <!-- LISTA DE LAUDISTAS -->
@@ -267,10 +267,9 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="info">
       <div class="titulo">JP LAUDO</div>
-      <div class="sub">Qualidade · <span class="versao-badge">v2.19.0</span></div>
+      <div class="sub">Qualidade · <span class="versao-badge">v2.21.0</span></div>
     </div>
     <div class="laudista-info" id="laudista-logado-info">—</div>
-    <button onclick="trocarPainelLaudo()" title="Trocar de painel" style="background:rgba(168,139,250,.15);border:1px solid rgba(168,139,250,.3);color:#a78bfa;border-radius:10px;padding:6px 10px;font-size:16px;cursor:pointer;margin-left:6px">🏠</button>
   </div>
 
   <!-- Status sincronia -->
@@ -297,7 +296,7 @@ input, textarea, select { font-family: inherit; }
 // JP LAUDO v1.9.6 - PAINEL DE QUALIDADE / LAUDO TÉCNICO
 // ============================================================================
 
-const VERSAO = 'v2.19.0';
+const VERSAO = 'v2.21.0';
 const TOLERANCIA_GRAMATURA = 0.05; // 5%
 const TOLERANCIA_COLUNA = 0.05; // 5%
 const MAX_TESTES = 3;
@@ -496,14 +495,13 @@ function logout() {
   voltarParaLista();
 }
 
-// v1.9.6 — Trocar de painel (volta ao menu principal)
+// v2.21.0 — fluxo fechado: nunca sai pro menu geral (index.html).
+// Se chamada, cai no login do próprio app (tela de nome + senha).
 function trocarPainelLaudo(){
-  if(!confirm('Voltar para o menu principal?\n\nVocê vai ter que escolher o painel de novo na próxima vez que abrir o app.')) return;
-  try {
-    localStorage.removeItem('jp_ultimo_painel');
-    localStorage.removeItem('jp_laudo_sessao');
-  } catch(e){}
-  window.location.href = 'index.html?menu=1';
+  if(typeof logout === 'function'){ logout(); return; }
+  try { localStorage.removeItem('jp_laudo_sessao'); } catch(e){}
+  $('tela-app').classList.remove('ativo');
+  $('tela-login').style.display = 'flex';
 }
 
 // ============ LIGAR EVENTOS DO NUMPAD ============

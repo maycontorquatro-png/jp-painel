@@ -307,6 +307,13 @@ body {
     <div class="instrucao">Selecione seu painel</div>
   </div>
 
+  <div id="menu-lock" style="display:none;text-align:center;padding:32px 22px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:16px;margin-top:24px">
+    <div style="font-size:40px;margin-bottom:10px">🔒</div>
+    <div style="font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;letter-spacing:1px;margin-bottom:8px">MENU RESTRITO</div>
+    <div style="font-size:13px;color:var(--text-3);line-height:1.6">Use o <b>link direto do seu app</b> que você recebeu.<br>O menu completo abre só pra quem entra no PCP.</div>
+    <a href="sistema.html" style="display:inline-block;margin-top:16px;background:linear-gradient(135deg,#009FE3,#33B5E8);color:#06283a;font-weight:700;padding:10px 20px;border-radius:10px;text-decoration:none;font-size:13px">Entrar no PCP</a>
+  </div>
+
   <div class="grid">
     <a href="painel_operador.html" class="card operador" onclick="lembrarEscolha('operador')">
       <div class="icon">📦</div>
@@ -359,7 +366,7 @@ body {
   </div>
 
   <div class="footer">
-    <span class="versao">v2.19.0</span> ·
+    <span class="versao">v2.21.0</span> ·
     <span class="status"><span class="dot"></span>Servidor online</span>
   </div>
 </div>
@@ -395,11 +402,20 @@ function cancelarRedirect() {
 
 // Ao carregar, verifica se tem painel salvo e redireciona
 (function init() {
-  // Se a URL tem ?menu=1, força mostrar o menu (link "voltar ao menu" dos PWAs)
+  // v2.21.0 — o menu completo (grade) só abre pra quem JÁ ENTROU no PCP (sem PIN).
+  // Operador usa o link direto do app dele. Marca 'jp_pcp_ok' é setada no sistema.html ao logar.
+  function gateMenu(){
+    let ok=false; try{ ok = localStorage.getItem('jp_pcp_ok')==='1'; }catch(e){}
+    if(!ok){
+      const g=document.querySelector('.grid'); if(g) g.style.display='none';
+      const lk=document.getElementById('menu-lock'); if(lk) lk.style.display='block';
+      const ins=document.querySelector('.instrucao'); if(ins) ins.textContent='Acesso restrito';
+    }
+  }
   const params = new URLSearchParams(window.location.search);
   if (params.get('menu') === '1') {
     try { localStorage.removeItem(PK_ULTIMO_PAINEL); } catch(e) {}
-    return; // só mostra o menu
+    gateMenu(); return; // mostra o menu (se for PCP) ou o bloqueio
   }
 
   let ultimo = null;
@@ -414,7 +430,9 @@ function cancelarRedirect() {
     redirectTimer = setTimeout(() => {
       window.location.href = painel.arquivo;
     }, 1500);
+    return;
   }
+  gateMenu(); // sem redirect → libera a grade só se for PCP
 })();
 </script>
 
