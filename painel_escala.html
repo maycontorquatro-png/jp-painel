@@ -642,7 +642,7 @@ body {
   <div class="app-header">
     <div class="app-titulo">
       🚛 JP ESCALA
-      <span class="badge">v2.18.0</span>
+      <span class="badge">v2.19.0</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span class="user-info" id="user-info"></span>
@@ -1441,12 +1441,30 @@ window.avisarMotorista = vgId => {
 
 // ─── POSTAR ESCALA DO DIA NO GRUPO ───
 // v1.9.7 — Monta o texto completo da escala do dia (todos os motoristas/viagens)
-function montarEscalaDia(){
+// Encurta um link via is.gd (grátis). Fallback: devolve o próprio link se falhar/sem internet.
+const _CACHE_LINK = {};
+async function encurtarLink(url){
+  if(_CACHE_LINK[url]) return _CACHE_LINK[url];
+  try{
+    const r = await fetch('https://tinyurl.com/api-create.php?url='+encodeURIComponent(url));
+    if(r.ok){ const s=(await r.text()).trim(); if(/^https?:\/\/\S+$/.test(s)){ _CACHE_LINK[url]=s; return s; } }
+  }catch(e){}
+  return url; // fallback robusto: link completo (nunca quebra)
+}
+const _mapsFull = (end)=>`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(end)}`;
+async function montarEscalaDia(){
   const viagens = STATE.viagens.filter(v => v.data === STATE.dataAtual && v.status !== 'cancelado');
   if(viagens.length === 0) return null;
 
   // ordena por hora de saída (mesma ordem da tela)
   viagens.sort((a,b) => (a.horaSaida||'99:99').localeCompare(b.horaSaida||'99:99'));
+
+  const destinosDe = v => (Array.isArray(v.destinos) && v.destinos.length > 0) ? v.destinos : [{ clienteNome:v.clienteNome, destinoLivre:v.destinoLivre, endereco:v.endereco }];
+
+  // 🔗 Encurta TODOS os links de mapa de uma vez (em paralelo), com cache
+  const tarefas = [];
+  viagens.forEach(v => destinosDe(v).forEach(d => { const e=(d.endereco||'').replace(/\s*·\s*/g,', ').trim(); if(e) tarefas.push(encurtarLink(_mapsFull(e))); }));
+  await Promise.all(tarefas);
 
   const dia = diaSemana(STATE.dataAtual);
   let msg = `🚛 *ESCALA DE ENTREGAS - ${dia.toUpperCase()} ${dataBR(STATE.dataAtual)}*\n\n`;
@@ -1454,13 +1472,11 @@ function montarEscalaDia(){
   viagens.forEach((v, i) => {
     const st = calcularStatus(v);
     const stLbl = statusInfo(st).lbl;
-    const destinos = Array.isArray(v.destinos) && v.destinos.length > 0 ? v.destinos : [{
-      clienteNome: v.clienteNome, destinoLivre: v.destinoLivre, endereco: v.endereco
-    }];
+    const destinos = destinosDe(v);
     const destLinhas = destinos.map((d, j) => {
       const nome = d.clienteNome || d.destinoLivre || '—';
       const endNav = (d.endereco || '').replace(/\s*·\s*/g, ', ').trim();
-      const linkMaps = endNav ? `\n     🧭 https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(endNav)}` : '';
+      const linkMaps = endNav ? `\n     🧭 ${_CACHE_LINK[_mapsFull(endNav)] || _mapsFull(endNav)}` : '';
       const ref = d.referencia ? ` (${d.referencia})` : '';
       return destinos.length > 1
         ? `        ${j+1}. ${nome}${d.endereco ? ' - '+d.endereco : ''}${ref}${linkMaps}`
@@ -1493,8 +1509,9 @@ async function copiarTexto(txt){
 
 const PK_GRUPO_LINK = 'jp_escala_grupo_link';
 
-$('btn-postar-dia').onclick = () => {
-  const r = montarEscalaDia();
+$('btn-postar-dia').onclick = async () => {
+  toast('🔗 Montando escala (encurtando links)...');
+  const r = await montarEscalaDia();
   if(!r){ toast('Sem viagens nessa data','err'); return; }
   // Mostra a escala COMPLETA montada na prévia (sempre atualizada com o estado atual)
   $('postar-preview').textContent = r.msg;
@@ -1510,7 +1527,7 @@ $('btn-postar-fechar').onclick = () => fecharModal('modal-postar');
 
 // Copiar escala
 $('btn-postar-copiar').onclick = async () => {
-  const r = montarEscalaDia();
+  const r = await montarEscalaDia();
   if(!r) return;
   const ok = await copiarTexto(r.msg);
   toast(ok ? '✓ Escala copiada! Cole no grupo do WhatsApp' : 'Não consegui copiar — selecione o texto manualmente', ok?'success':'err');
@@ -1519,7 +1536,7 @@ $('btn-postar-copiar').onclick = async () => {
 
 // Abrir WhatsApp (no grupo se tiver link, senão abre o app pra escolher)
 $('btn-postar-whats').onclick = async () => {
-  const r = montarEscalaDia();
+  const r = await montarEscalaDia();
   if(!r) return;
   await copiarTexto(r.msg); // copia sempre, pra colar fácil
   let link = '';
