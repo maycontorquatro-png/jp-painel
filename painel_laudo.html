@@ -14,6 +14,7 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
 <!-- html2pdf para geração de PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -219,7 +220,7 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="logo-titulo">JP EMBALAGENS</div>
     <div style="font-family:'Oswald'; font-size: 13px; color:#009FE3; letter-spacing:5px; margin-top:2px;">CAIXAS DE PAPELÃO</div>
-    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.24.0</span></div>
+    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.25.0</span></div>
   </div>
 
   <!-- LISTA DE LAUDISTAS -->
@@ -267,7 +268,7 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="info">
       <div class="titulo">JP LAUDO</div>
-      <div class="sub">Qualidade · <span class="versao-badge">v2.24.0</span></div>
+      <div class="sub">Qualidade · <span class="versao-badge">v2.25.0</span></div>
     </div>
     <div class="laudista-info" id="laudista-logado-info">—</div>
   </div>
@@ -296,7 +297,7 @@ input, textarea, select { font-family: inherit; }
 // JP LAUDO v1.9.6 - PAINEL DE QUALIDADE / LAUDO TÉCNICO
 // ============================================================================
 
-const VERSAO = 'v2.24.0';
+const VERSAO = 'v2.25.0';
 const TOLERANCIA_GRAMATURA = 0.05; // 5%
 const TOLERANCIA_COLUNA = 0.05; // 5%
 const MAX_TESTES = 3;
@@ -313,12 +314,30 @@ const FB_CONFIG = {
 
 let db = null;
 
+// v2.25.0 — LOGIN ANÔNIMO do Firebase (camada invisível; prepara pra fechar as regras depois).
+// NÃO mexe no login de nome/senha. Plano B: se falhar/demorar, libera mesmo assim (regras ainda abertas) pra NÃO travar.
+let _authPronto = false;
+const _filaAuth = [];
+function aposAuth(fn){ if(_authPronto){ try{fn();}catch(e){console.warn(e);} } else { _filaAuth.push(fn); } }
+function authReady(){ return new Promise(res=>aposAuth(res)); }
+function _liberarAuth(){ if(_authPronto) return; _authPronto = true; _filaAuth.splice(0).forEach(f=>{ try{f();}catch(e){console.warn(e);} }); }
+function iniciarAuthAnon(){
+  try {
+    if(typeof firebase!=='undefined' && firebase.auth){
+      const auth = firebase.auth();
+      auth.onAuthStateChanged(u=>{ if(u) _liberarAuth(); });
+      (function tentar(){ auth.signInAnonymously().catch(e=>{ console.warn('login anônimo falhou, tento de novo:', e&&e.message); setTimeout(tentar, 5000); }); })();
+    }
+  } catch(e){ console.warn('auth anon init:', e&&e.message); }
+  setTimeout(_liberarAuth, 8000); // plano B anti-travamento (regras ainda abertas)
+}
 function initFirebase() {
   try {
     firebase.initializeApp(FB_CONFIG);
     db = firebase.firestore();
     // v2.9.0 — Camada 1: cache offline (sincroniza sozinho quando a internet volta)
     try { db.enablePersistence({ synchronizeTabs: true }).catch(function(){}); } catch(e){}
+    iniciarAuthAnon(); // v2.25.0 — login invisível ANTES de ler/gravar
     setSincStatus('online', '✓ Conectado');
     return true;
   } catch (e) {
@@ -495,7 +514,7 @@ function logout() {
   voltarParaLista();
 }
 
-// v2.24.0 — fluxo fechado: nunca sai pro menu geral (index.html).
+// v2.25.0 — fluxo fechado: nunca sai pro menu geral (index.html).
 // Se chamada, cai no login do próprio app (tela de nome + senha).
 function trocarPainelLaudo(){
   if(typeof logout === 'function'){ logout(); return; }
@@ -1576,6 +1595,7 @@ async function inicializar() {
     toast('Sem conexão com o servidor', 'error');
     return;
   }
+  await authReady(); // v2.25.0 — espera o login anônimo (ou o plano B) antes de ler/gravar
   await carregarDados();
 
   // v1.9.6 — Restaurar sessão salva (com check de 12h)
