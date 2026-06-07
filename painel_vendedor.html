@@ -213,7 +213,7 @@ h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
     <div class="login-jp"><svg viewBox="0 0 100 100"><text x="50" y="65" font-family="Oswald,sans-serif" font-size="42" font-weight="700" text-anchor="middle" fill="#009FE3" letter-spacing="-2">JP</text></svg></div>
     <h1>JP EMBALAGENS</h1>
     <div class="login-cx">CAIXAS DE PAPELÃO</div>
-    <p>App do Vendedor · <span class="badge">v2.25.0</span></p>
+    <p>App do Vendedor · <span class="badge">v2.26.0</span></p>
   </div>
   <div class="login-body">
     <!-- ETAPA A: nomes salvos neste aparelho -->
@@ -349,7 +349,7 @@ const firebaseConfig = {
 let db = null, storage = null;
 try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); try { db.enablePersistence({ synchronizeTabs: true }).catch(function(){}); } catch(_e){} } catch(e){ console.error('Firebase:', e); }
 try { storage = firebase.storage(); } catch(e){ storage = null; console.warn('Storage indisponível:', e.message); }
-// v2.25.0 — LOGIN ANÔNIMO do Firebase (camada invisível; prepara pra fechar as regras depois).
+// v2.26.0 — LOGIN ANÔNIMO do Firebase (camada invisível; prepara pra fechar as regras depois).
 // NÃO mexe no login de PIN. Plano B: se falhar/demorar, libera mesmo assim (regras ainda abertas) pra NÃO travar.
 let _authPronto = false;
 const _filaAuth = [];
@@ -1261,7 +1261,7 @@ function reenviarPendentes(){
 // ===== Boot =====
 montarNumpad();
 mostrarEtapaLogin();
-// v2.25.0 — só lê/grava no Firebase DEPOIS do login anônimo (ou do plano B)
+// v2.26.0 — só lê/grava no Firebase DEPOIS do login anônimo (ou do plano B)
 aposAuth(function(){
   carregarVendedoresLogin();
   try {
@@ -1290,6 +1290,37 @@ aposAuth(function(){
   window.addEventListener('offline', offline);
   window.addEventListener('online', online);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+// v2.26.0 — Detector de versão nova (resolve o cache agressivo do PWA no iOS). Extra independente; não afeta o offline.
+(function(){
+  var JP_VERSAO_APP='2.26.0';
+  function num(v){ return (String(v||'').match(/\d+/g)||[]).map(Number); }
+  function maior(a,b){ var x=num(a),y=num(b),n=Math.max(x.length,y.length); for(var i=0;i<n;i++){ var d=(x[i]||0)-(y[i]||0); if(d) return d>0; } return false; }
+  function atualizar(){
+    try{ if(window.caches&&caches.keys){ caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); } }catch(e){}
+    location.replace(location.pathname+'?v='+Date.now());
+  }
+  function banner(nv){
+    if(document.getElementById('jp-update-banner')) return;
+    var b=document.createElement('div');
+    b.id='jp-update-banner';
+    b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483600;background:linear-gradient(135deg,#009FE3,#00668E);color:#fff;padding:14px 18px;padding-bottom:calc(14px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;font-weight:700;font-size:14px;line-height:1.3;box-shadow:0 -4px 24px rgba(0,0,0,.45);cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,sans-serif';
+    b.innerHTML='<span style="font-size:20px">🔄</span><span style="flex:1">Nova versão disponível ('+nv+') — toque para atualizar</span><span style="background:rgba(255,255,255,.25);padding:7px 14px;border-radius:9px;white-space:nowrap">Atualizar</span>';
+    b.onclick=atualizar;
+    document.body.appendChild(b);
+  }
+  function checar(){
+    try{
+      fetch('versao.json?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).then(function(j){
+        if(j&&j.versao&&maior(j.versao,JP_VERSAO_APP)) banner(j.versao);
+      }).catch(function(){});
+    }catch(e){}
+  }
+  setTimeout(checar,3000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) checar(); });
+  setInterval(checar,300000);
 })();
 </script>
 </body>

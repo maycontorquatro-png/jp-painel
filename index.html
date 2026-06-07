@@ -366,7 +366,7 @@ body {
   </div>
 
   <div class="footer">
-    <span class="versao">v2.25.0</span> ·
+    <span class="versao">v2.26.0</span> ·
     <span class="status"><span class="dot"></span>Servidor online</span>
   </div>
 </div>
@@ -402,7 +402,7 @@ function cancelarRedirect() {
 
 // Ao carregar, verifica se tem painel salvo e redireciona
 (function init() {
-  // v2.25.0 — o menu completo (grade) só abre pra quem JÁ ENTROU no PCP (sem PIN).
+  // v2.26.0 — o menu completo (grade) só abre pra quem JÁ ENTROU no PCP (sem PIN).
   // Operador usa o link direto do app dele. Marca 'jp_pcp_ok' é setada no sistema.html ao logar.
   function gateMenu(){
     let ok=false; try{ ok = localStorage.getItem('jp_pcp_ok')==='1'; }catch(e){}

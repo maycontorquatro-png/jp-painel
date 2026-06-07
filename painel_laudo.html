@@ -220,7 +220,7 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="logo-titulo">JP EMBALAGENS</div>
     <div style="font-family:'Oswald'; font-size: 13px; color:#009FE3; letter-spacing:5px; margin-top:2px;">CAIXAS DE PAPELÃO</div>
-    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.25.0</span></div>
+    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.26.0</span></div>
   </div>
 
   <!-- LISTA DE LAUDISTAS -->
@@ -268,7 +268,7 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="info">
       <div class="titulo">JP LAUDO</div>
-      <div class="sub">Qualidade · <span class="versao-badge">v2.25.0</span></div>
+      <div class="sub">Qualidade · <span class="versao-badge">v2.26.0</span></div>
     </div>
     <div class="laudista-info" id="laudista-logado-info">—</div>
   </div>
@@ -297,7 +297,7 @@ input, textarea, select { font-family: inherit; }
 // JP LAUDO v1.9.6 - PAINEL DE QUALIDADE / LAUDO TÉCNICO
 // ============================================================================
 
-const VERSAO = 'v2.25.0';
+const VERSAO = 'v2.26.0';
 const TOLERANCIA_GRAMATURA = 0.05; // 5%
 const TOLERANCIA_COLUNA = 0.05; // 5%
 const MAX_TESTES = 3;
@@ -314,7 +314,7 @@ const FB_CONFIG = {
 
 let db = null;
 
-// v2.25.0 — LOGIN ANÔNIMO do Firebase (camada invisível; prepara pra fechar as regras depois).
+// v2.26.0 — LOGIN ANÔNIMO do Firebase (camada invisível; prepara pra fechar as regras depois).
 // NÃO mexe no login de nome/senha. Plano B: se falhar/demorar, libera mesmo assim (regras ainda abertas) pra NÃO travar.
 let _authPronto = false;
 const _filaAuth = [];
@@ -337,7 +337,7 @@ function initFirebase() {
     db = firebase.firestore();
     // v2.9.0 — Camada 1: cache offline (sincroniza sozinho quando a internet volta)
     try { db.enablePersistence({ synchronizeTabs: true }).catch(function(){}); } catch(e){}
-    iniciarAuthAnon(); // v2.25.0 — login invisível ANTES de ler/gravar
+    iniciarAuthAnon(); // v2.26.0 — login invisível ANTES de ler/gravar
     setSincStatus('online', '✓ Conectado');
     return true;
   } catch (e) {
@@ -514,7 +514,7 @@ function logout() {
   voltarParaLista();
 }
 
-// v2.25.0 — fluxo fechado: nunca sai pro menu geral (index.html).
+// v2.26.0 — fluxo fechado: nunca sai pro menu geral (index.html).
 // Se chamada, cai no login do próprio app (tela de nome + senha).
 function trocarPainelLaudo(){
   if(typeof logout === 'function'){ logout(); return; }
@@ -1595,7 +1595,7 @@ async function inicializar() {
     toast('Sem conexão com o servidor', 'error');
     return;
   }
-  await authReady(); // v2.25.0 — espera o login anônimo (ou o plano B) antes de ler/gravar
+  await authReady(); // v2.26.0 — espera o login anônimo (ou o plano B) antes de ler/gravar
   await carregarDados();
 
   // v1.9.6 — Restaurar sessão salva (com check de 12h)
@@ -1660,6 +1660,37 @@ inicializar();
   window.addEventListener('offline', offline);
   window.addEventListener('online', online);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+// v2.26.0 — Detector de versão nova (resolve o cache agressivo do PWA no iOS). Extra independente; não afeta o offline.
+(function(){
+  var JP_VERSAO_APP='2.26.0';
+  function num(v){ return (String(v||'').match(/\d+/g)||[]).map(Number); }
+  function maior(a,b){ var x=num(a),y=num(b),n=Math.max(x.length,y.length); for(var i=0;i<n;i++){ var d=(x[i]||0)-(y[i]||0); if(d) return d>0; } return false; }
+  function atualizar(){
+    try{ if(window.caches&&caches.keys){ caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); } }catch(e){}
+    location.replace(location.pathname+'?v='+Date.now());
+  }
+  function banner(nv){
+    if(document.getElementById('jp-update-banner')) return;
+    var b=document.createElement('div');
+    b.id='jp-update-banner';
+    b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483600;background:linear-gradient(135deg,#009FE3,#00668E);color:#fff;padding:14px 18px;padding-bottom:calc(14px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;font-weight:700;font-size:14px;line-height:1.3;box-shadow:0 -4px 24px rgba(0,0,0,.45);cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,sans-serif';
+    b.innerHTML='<span style="font-size:20px">🔄</span><span style="flex:1">Nova versão disponível ('+nv+') — toque para atualizar</span><span style="background:rgba(255,255,255,.25);padding:7px 14px;border-radius:9px;white-space:nowrap">Atualizar</span>';
+    b.onclick=atualizar;
+    document.body.appendChild(b);
+  }
+  function checar(){
+    try{
+      fetch('versao.json?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).then(function(j){
+        if(j&&j.versao&&maior(j.versao,JP_VERSAO_APP)) banner(j.versao);
+      }).catch(function(){});
+    }catch(e){}
+  }
+  setTimeout(checar,3000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) checar(); });
+  setInterval(checar,300000);
 })();
 </script>
 </body>
