@@ -220,7 +220,7 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="logo-titulo">JP EMBALAGENS</div>
     <div style="font-family:'Oswald'; font-size: 13px; color:#009FE3; letter-spacing:5px; margin-top:2px;">CAIXAS DE PAPELÃO</div>
-    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.26.0</span></div>
+    <div class="logo-sub">App de Laudo · Qualidade · <span class="versao-badge" id="versao-badge-login" style="font-family:'JetBrains Mono';font-size:9px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 5px;border-radius:3px;border:1px solid rgba(51,181,232,.3)">v2.26.1</span></div>
   </div>
 
   <!-- LISTA DE LAUDISTAS -->
@@ -268,7 +268,7 @@ input, textarea, select { font-family: inherit; }
     </div>
     <div class="info">
       <div class="titulo">JP LAUDO</div>
-      <div class="sub">Qualidade · <span class="versao-badge">v2.26.0</span></div>
+      <div class="sub">Qualidade · <span class="versao-badge">v2.26.1</span></div>
     </div>
     <div class="laudista-info" id="laudista-logado-info">—</div>
   </div>
@@ -297,7 +297,7 @@ input, textarea, select { font-family: inherit; }
 // JP LAUDO v1.9.6 - PAINEL DE QUALIDADE / LAUDO TÉCNICO
 // ============================================================================
 
-const VERSAO = 'v2.26.0';
+const VERSAO = 'v2.26.1';
 const TOLERANCIA_GRAMATURA = 0.05; // 5%
 const TOLERANCIA_COLUNA = 0.05; // 5%
 const MAX_TESTES = 3;
@@ -314,7 +314,7 @@ const FB_CONFIG = {
 
 let db = null;
 
-// v2.26.0 — LOGIN ANÔNIMO do Firebase (camada invisível; prepara pra fechar as regras depois).
+// v2.26.1 — LOGIN ANÔNIMO do Firebase (camada invisível; prepara pra fechar as regras depois).
 // NÃO mexe no login de nome/senha. Plano B: se falhar/demorar, libera mesmo assim (regras ainda abertas) pra NÃO travar.
 let _authPronto = false;
 const _filaAuth = [];
@@ -337,7 +337,7 @@ function initFirebase() {
     db = firebase.firestore();
     // v2.9.0 — Camada 1: cache offline (sincroniza sozinho quando a internet volta)
     try { db.enablePersistence({ synchronizeTabs: true }).catch(function(){}); } catch(e){}
-    iniciarAuthAnon(); // v2.26.0 — login invisível ANTES de ler/gravar
+    iniciarAuthAnon(); // v2.26.1 — login invisível ANTES de ler/gravar
     setSincStatus('online', '✓ Conectado');
     return true;
   } catch (e) {
@@ -514,7 +514,7 @@ function logout() {
   voltarParaLista();
 }
 
-// v2.26.0 — fluxo fechado: nunca sai pro menu geral (index.html).
+// v2.26.1 — fluxo fechado: nunca sai pro menu geral (index.html).
 // Se chamada, cai no login do próprio app (tela de nome + senha).
 function trocarPainelLaudo(){
   if(typeof logout === 'function'){ logout(); return; }
@@ -1595,7 +1595,7 @@ async function inicializar() {
     toast('Sem conexão com o servidor', 'error');
     return;
   }
-  await authReady(); // v2.26.0 — espera o login anônimo (ou o plano B) antes de ler/gravar
+  await authReady(); // v2.26.1 — espera o login anônimo (ou o plano B) antes de ler/gravar
   await carregarDados();
 
   // v1.9.6 — Restaurar sessão salva (com check de 12h)
@@ -1663,9 +1663,9 @@ inicializar();
 })();
 </script>
 <script>
-// v2.26.0 — Detector de versão nova (resolve o cache agressivo do PWA no iOS). Extra independente; não afeta o offline.
+// v2.26.1 — Detector de versão nova (resolve o cache agressivo do PWA no iOS). Extra independente; não afeta o offline.
 (function(){
-  var JP_VERSAO_APP='2.26.0';
+  var JP_VERSAO_APP='2.26.1';
   function num(v){ return (String(v||'').match(/\d+/g)||[]).map(Number); }
   function maior(a,b){ var x=num(a),y=num(b),n=Math.max(x.length,y.length); for(var i=0;i<n;i++){ var d=(x[i]||0)-(y[i]||0); if(d) return d>0; } return false; }
   function atualizar(){

@@ -213,7 +213,7 @@ h1,h2,h3{font-family:'Oswald',sans-serif;margin:0}
     <div class="login-jp"><svg viewBox="0 0 100 100"><text x="50" y="65" font-family="Oswald,sans-serif" font-size="42" font-weight="700" text-anchor="middle" fill="#009FE3" letter-spacing="-2">JP</text></svg></div>
     <h1>JP EMBALAGENS</h1>
     <div class="login-cx">CAIXAS DE PAPELÃO</div>
-    <p>App do Vendedor · <span class="badge">v2.26.0</span></p>
+    <p>App do Vendedor · <span class="badge">v2.26.1</span></p>
   </div>
   <div class="login-body">
     <!-- ETAPA A: nomes salvos neste aparelho -->
@@ -349,7 +349,7 @@ const firebaseConfig = {
 let db = null, storage = null;
 try { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); try { db.enablePersistence({ synchronizeTabs: true }).catch(function(){}); } catch(_e){} } catch(e){ console.error('Firebase:', e); }
 try { storage = firebase.storage(); } catch(e){ storage = null; console.warn('Storage indisponível:', e.message); }
-// v2.26.0 — LOGIN ANÔNIMO do Firebase (camada invisível; prepara pra fechar as regras depois).
+// v2.26.1 — LOGIN ANÔNIMO do Firebase (camada invisível; prepara pra fechar as regras depois).
 // NÃO mexe no login de PIN. Plano B: se falhar/demorar, libera mesmo assim (regras ainda abertas) pra NÃO travar.
 let _authPronto = false;
 const _filaAuth = [];
@@ -1261,7 +1261,7 @@ function reenviarPendentes(){
 // ===== Boot =====
 montarNumpad();
 mostrarEtapaLogin();
-// v2.26.0 — só lê/grava no Firebase DEPOIS do login anônimo (ou do plano B)
+// v2.26.1 — só lê/grava no Firebase DEPOIS do login anônimo (ou do plano B)
 aposAuth(function(){
   carregarVendedoresLogin();
   try {
@@ -1293,9 +1293,9 @@ aposAuth(function(){
 })();
 </script>
 <script>
-// v2.26.0 — Detector de versão nova (resolve o cache agressivo do PWA no iOS). Extra independente; não afeta o offline.
+// v2.26.1 — Detector de versão nova (resolve o cache agressivo do PWA no iOS). Extra independente; não afeta o offline.
 (function(){
-  var JP_VERSAO_APP='2.26.0';
+  var JP_VERSAO_APP='2.26.1';
   function num(v){ return (String(v||'').match(/\d+/g)||[]).map(Number); }
   function maior(a,b){ var x=num(a),y=num(b),n=Math.max(x.length,y.length); for(var i=0;i<n;i++){ var d=(x[i]||0)-(y[i]||0); if(d) return d>0; } return false; }
   function atualizar(){
