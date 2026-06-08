@@ -14,7 +14,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" crossorigin="anonymous"></script>
-<!-- v2.26.2 — menu não abre mais misturado (filtro do módulo ativo como última etapa); v2.26.1 blindagem pré-fechamento das regras -->
+<!-- v2.27.0 — conclusão de pedido em tempo real entre operadores (quadro compartilhado por merge); v2.26.5 cronômetro de produção + handoff no operador; v2.26.4 backup automático COMPLETO 30min (cofre Firebase + PC); v2.26.3 disjuntor anti-perda de dados -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -564,7 +564,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
 <div class="app-header">
   <div class="brand">
     <div class="brand-mark"><img src="data:image/png;base64,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" alt="JP Embalagens" style="width:100%;height:100%;object-fit:contain;display:block"></div>
-    <div class="brand-text"><h1>CONTROLE DE PRODUÇÃO</h1><p>JP EMBALAGENS · Caixas de Papelão · <span id="sinc-status-bar" style="color:#33B5E8;font-family:'JetBrains Mono';font-size:10px">⏳ Conectando...</span> · <span id="versao-badge" style="font-family:'JetBrains Mono';font-size:10px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 7px;border-radius:4px;cursor:pointer;border:1px solid rgba(51,181,232,.3)" title="Ver changelog">v2.26.2</span></p></div>
+    <div class="brand-text"><h1>CONTROLE DE PRODUÇÃO</h1><p>JP EMBALAGENS · Caixas de Papelão · <span id="sinc-status-bar" style="color:#33B5E8;font-family:'JetBrains Mono';font-size:10px">⏳ Conectando...</span> · <span id="versao-badge" style="font-family:'JetBrains Mono';font-size:10px;color:#33B5E8;background:rgba(51,181,232,.12);padding:1px 7px;border-radius:4px;cursor:pointer;border:1px solid rgba(51,181,232,.3)" title="Ver changelog">v2.27.0</span></p></div>
   </div>
   <div class="header-actions">
     <button class="btn btn-ghost" id="btn-importar">↑ Importar Relatório</button>
@@ -3274,6 +3274,16 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
         <div class="hint">⚠️ ATENÇÃO: vai substituir TODOS os dados atuais pelos do arquivo. Faça um backup antes se tiver dúvida.</div>
       </div>
 
+      <!-- COFRE NA NUVEM (v2.26.4) -->
+      <div style="border-top:1px solid var(--line-soft);padding-top:14px;margin-bottom:14px">
+        <label>☁️ Cofre na nuvem (backup automático a cada 30 min)</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-ghost" id="btn-cofre-listar" style="flex:1;min-width:200px">📂 Ver / restaurar backups da nuvem</button>
+        </div>
+        <div id="cofre-lista" style="margin-top:10px;font-size:12px;max-height:240px;overflow-y:auto"></div>
+        <div class="hint">A cada 30 min o sistema salva uma cópia COMPLETA (caixas, clientes, vendedores, pedidos…) na nuvem (últimas 48) e baixa uma no PC. Aqui você vê e restaura.</div>
+      </div>
+
       <!-- BACKUP AUTOMÁTICO -->
       <div style="border-top:1px solid var(--line-soft);padding-top:14px;margin-bottom:14px">
         <label>⚙️ Backup automático</label>
@@ -3356,17 +3366,61 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;c
         <div style="font-size:32px">🚀</div>
         <div>
           <div style="font-size:11px;color:var(--text-4);text-transform:uppercase;letter-spacing:1px">Versão atual</div>
-          <div style="font-family:'JetBrains Mono';font-size:24px;font-weight:700;color:#33B5E8">v2.26.2</div>
+          <div style="font-family:'JetBrains Mono';font-size:24px;font-weight:700;color:#33B5E8">v2.27.0</div>
           <div style="font-size:11px;color:var(--text-3);margin-top:2px">JP Embalagens · Sistema de Controle de Produção</div>
         </div>
       </div>
 
       <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600">📜 Histórico de versões</div>
 
-      <!-- v2.26.2 -->
+      <!-- v2.27.0 -->
       <div style="background:var(--bg-3);border-left:3px solid #22c55e;border-radius:6px;padding:12px 14px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div style="font-family:'JetBrains Mono';font-weight:700;color:#22c55e">v2.26.2 <span style="background:rgba(34,197,94,.2);color:#86efac;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:6px">ATUAL</span></div>
+          <div style="font-family:'JetBrains Mono';font-weight:700;color:#22c55e">v2.27.0 <span style="background:rgba(34,197,94,.2);color:#86efac;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:6px">ATUAL</span></div>
+          <div style="font-size:11px;color:var(--text-4)">08/06/2026</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-2);line-height:1.7">
+          ✅ <b>Conclusão de pedido em tempo real entre operadores</b>: quando um operador conclui um pedido, ele <b>some da lista de todo mundo na mesma hora</b> (antes só sumia no celular de quem concluiu, e dava pra outro produzir de novo). Usa um <b>quadro compartilhado na nuvem gravado por merge</b> (mesmo padrão da trava de pedido) — sem corrida de dados e funciona offline. A aba "Concluídos" mostra também os concluídos por colegas da mesma máquina (marcados "só leitura").<br>
+        </div>
+      </div>
+
+      <!-- v2.26.5 -->
+      <div style="background:var(--bg-3);border-left:3px solid #009FE3;border-radius:6px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-family:'JetBrains Mono';font-weight:700;color:#009FE3">v2.26.5</div>
+          <div style="font-size:11px;color:var(--text-4)">08/06/2026</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-2);line-height:1.7">
+          ⏱️ <b>Cronômetro durante a produção + passagem de turno (handoff)</b> no app do operador: o tempo de produção aparece rodando também na tela de finalizar, com "faltam X caixas". Ao <b>largar/encerrar o turno</b>, o pedido fica disponível pra outro continuar — guardando quanto já foi feito, quem largou e a hora — e o cronômetro <b>congela e retoma</b> num segmento novo sem perder o tempo acumulado.<br>
+        </div>
+      </div>
+
+      <!-- v2.26.4 -->
+      <div style="background:var(--bg-3);border-left:3px solid #009FE3;border-radius:6px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-family:'JetBrains Mono';font-weight:700;color:#009FE3">v2.26.4</div>
+          <div style="font-size:11px;color:var(--text-4)">08/06/2026</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-2);line-height:1.7">
+          🛟 <b>Backup automático COMPLETO a cada 30 min</b>: agora salva uma cópia de <b>tudo</b> (caixas, clientes, vendedores, pedidos, chapas, papéis, cores…) num <b>cofre na nuvem</b> (últimas 48) <b>e</b> baixa uma no PC. Antes o backup só guardava pedidos+config (por isso os cadastros se perderam). Dá pra <b>ver e restaurar</b> os backups da nuvem no botão "☁️ Cofre" do backup. Só faz backup se os dados estiverem saudáveis (não grava cópia vazia).<br>
+        </div>
+      </div>
+
+      <!-- v2.26.3 -->
+      <div style="background:var(--bg-3);border-left:3px solid #009FE3;border-radius:6px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-family:'JetBrains Mono';font-weight:700;color:#009FE3">v2.26.3</div>
+          <div style="font-size:11px;color:var(--text-4)">08/06/2026</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-2);line-height:1.7">
+          🛟 <b>Proteção contra perda de dados (caixas, clientes, vendedores)</b>: (1) <b>nunca salva lista vazia</b> nem encolhida sem confirmar (disjuntor); (2) só lê/grava <b>depois do login</b>; (3) erro de leitura não é mais engolido — <b>bloqueia o salvar</b> até recarregar; (4) <b>desligado o salvamento automático</b> que recriava clientes em branco. Corrige o incidente de esvaziamento dos cadastros.<br>
+        </div>
+      </div>
+
+      <!-- v2.26.2 -->
+      <div style="background:var(--bg-3);border-left:3px solid #009FE3;border-radius:6px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-family:'JetBrains Mono';font-weight:700;color:#009FE3">v2.26.2</div>
           <div style="font-size:11px;color:var(--text-4)">07/06/2026</div>
         </div>
         <div style="font-size:12px;color:var(--text-2);line-height:1.7">
@@ -7766,14 +7820,26 @@ function saveBackupInfo(){
 }
 
 function gerarPayloadBackup(){
+  // v2.26.4 — backup COMPLETO: além de pedidos+config, guarda TODO o localStorage
+  // relevante (caixas, clientes, vendedores, chapas, papéis, cores, motoristas, etc.)
+  const storage = {};
+  try {
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(/^jp_|^PK_|^mtx_/.test(k)){ const v = localStorage.getItem(k); if(v!=null) storage[k]=v; }
+    }
+  } catch(e){ console.warn('backup storage:', e.message); }
   return {
     tipo: 'mtx_backup_completo',
-    versao: 2,
+    versao: 3,
     geradoEm: new Date().toISOString(),
     qtdPedidos: STATE.pedidos.length,
     qtdRegistros: STATE.pedidos.reduce((s,p)=>s+(p.registros||[]).length, 0),
+    qtdCaixas: (()=>{try{return JSON.parse(localStorage.getItem('jp_caixas_v1')||'[]').length}catch(e){return 0}})(),
+    qtdClientes: (()=>{try{return JSON.parse(localStorage.getItem('jp_clientes_v1')||'[]').length}catch(e){return 0}})(),
     config: STATE.config,
-    pedidos: STATE.pedidos
+    pedidos: STATE.pedidos,
+    storage // ← NOVO: cadastros completos
   };
 }
 
@@ -8010,13 +8076,24 @@ document.getElementById('btn-bkp-restaurar').onclick = ()=>{
         STATE.config = {...STATE.config, ...data.config};
         saveStorage(PK_CONFIG, STATE.config);
       }
+      // v2.26.4 — restaura também os CADASTROS completos (caixas, clientes, vendedores, etc.)
+      let _cadCount = 0;
+      if(data.storage && typeof data.storage === 'object'){
+        Object.entries(data.storage).forEach(([k,v])=>{
+          if(typeof v === 'string' && k !== 'jp_pcp_ok'){ try { localStorage.setItem(k, v); _cadCount++; } catch(e){} }
+        });
+        // recarrega as listas em memória
+        ['carregarCaixas','carregarClientes','carregarVendedores','carregarChapas','carregarPapeis','carregarCores','carregarMotoristas','carregarCaminhoes'].forEach(fn=>{ if(typeof window[fn]==='function'){ try{ window[fn](); }catch(e){} } });
+        // empurra os críticos pra nuvem (o disjuntor v2.26.3 protege contra vazio)
+        ['salvarCaixas','salvarClientes','salvarVendedores'].forEach(fn=>{ if(typeof window[fn]==='function'){ try{ window[fn](); }catch(e){} } });
+      }
       // Salvar os pedidos diretamente (sem disparar contador)
       localStorage.setItem(PK_PEDIDOS, JSON.stringify(STATE.pedidos));
       BACKUP_INFO.contadorMudancas = 0;
       BACKUP_INFO.ultimoBackup = data.geradoEm || new Date().toISOString();
       saveBackupInfo();
       fecharModal('modal-backup');
-      toast(`✓ Restaurado: ${STATE.pedidos.length} pedidos`);
+      toast(`✓ Restaurado: ${STATE.pedidos.length} pedidos`+(_cadCount?` + ${_cadCount} cadastros`:''));
       renderAll();
     } catch(err){
       toast('Erro ao ler arquivo: ' + err.message, 'err');
@@ -12405,6 +12482,53 @@ document.getElementById('btn-salvar-usuario').onclick = async ()=>{
   renderListaUsuarios();
 };
 
+// ============================================================
+// v2.26.3 — PROTEÇÃO CONTRA PERDA DE DADOS (disjuntor + espera login + status de leitura)
+// ============================================================
+// Status da leitura inicial de cada coleção: 'pendente' | 'ok' | 'falhou'
+window.LOAD_STATUS = window.LOAD_STATUS || { caixas:'pendente', clientes:'pendente', vendedores:'pendente' };
+
+// Espera o login do PCP antes de ler/gravar (mesmo cuidado dos apps de chão)
+let _pcpLogado = false;
+const _filaLoginPCP = [];
+function aposLoginPCP(fn){ if(_pcpLogado){ try{fn();}catch(e){console.error('aposLoginPCP:',e);} } else { _filaLoginPCP.push(fn); } }
+function _marcarLoginPCP(){ if(_pcpLogado) return; _pcpLogado = true; _filaLoginPCP.splice(0).forEach(f=>{ try{f();}catch(e){console.error('aposLoginPCP fila:',e);} }); }
+
+function _avisoDisjuntor(msg){
+  console.error('[DISJUNTOR] '+msg);
+  try{ if(typeof toast==='function'){ toast('⛔ '+msg,'err'); return; } }catch(e){}
+  try{ alert('⛔ '+msg); }catch(e){}
+}
+// Bloqueio síncrono: NUNCA salvar lista vazia, nem salvar se a leitura inicial falhou.
+function disjuntorBloqueiaSave(docId, campo, lista){
+  if(!Array.isArray(lista) || lista.length === 0){
+    _avisoDisjuntor('Salvamento de '+campo+' BLOQUEADO: a lista está vazia (proteção de dados). Recarregue o sistema.');
+    return true;
+  }
+  if(window.LOAD_STATUS[docId] === 'falhou'){
+    _avisoDisjuntor('Salvamento de '+campo+' BLOQUEADO: a leitura do servidor falhou. Recarregue antes de salvar.');
+    return true;
+  }
+  return false;
+}
+// Bloqueio assíncrono: compara com a nuvem. Encolheu >30% → pede confirmação. Não deu pra ler → cancela por segurança.
+async function nuvemEncolheuDemais(docId, campo, lista){
+  if(typeof db === 'undefined' || !db) return false;
+  try{
+    const snap = await db.collection('jp_sistema').doc(docId).get();
+    const nuvem = (snap.exists && Array.isArray(snap.data()[campo])) ? snap.data()[campo] : null;
+    if(nuvem && nuvem.length > 0 && lista.length < nuvem.length * 0.7){
+      const apagar = nuvem.length - lista.length;
+      const ok = confirm('⚠ ATENÇÃO — POSSÍVEL PERDA DE DADOS\n\nVocê vai salvar '+lista.length+' '+campo+', mas o servidor tem '+nuvem.length+'.\nSalvar agora vai APAGAR '+apagar+' registro(s).\n\nTem certeza que é isso mesmo?');
+      if(!ok){ console.warn('[DISJUNTOR] '+docId+': salvamento cancelado pelo usuário ('+lista.length+' vs nuvem '+nuvem.length+').'); return true; }
+    }
+    return false;
+  }catch(e){
+    _avisoDisjuntor('Não consegui verificar o servidor antes de salvar '+campo+'. Salvamento cancelado por segurança. Recarregue.');
+    return true;
+  }
+}
+
 // ─── Auth State Changed ───
 (function initAuth(){
   try {
@@ -12421,6 +12545,7 @@ document.getElementById('btn-salvar-usuario').onclick = async ()=>{
         // Usuário logado
         mostrarTelaLogin(false);
         USUARIO_ATUAL = {uid: user.uid, email: user.email};
+        _marcarLoginPCP(); // v2.26.3 — libera as leituras/gravações só depois do login confirmado
         const perfil = await carregarPerfil(user);
         USUARIO_ATUAL.perfil = perfil;
         aplicarPermissoes(perfil);
@@ -12436,6 +12561,7 @@ document.getElementById('btn-salvar-usuario').onclick = async ()=>{
     console.warn('Auth erro:', e.message);
     // Se Firebase Auth não disponível, permitir acesso (modo offline)
     mostrarTelaLogin(false);
+    _marcarLoginPCP(); // v2.26.3 — modo offline: libera a fila (leituras vão tratar db ausente; disjuntor protege os saves)
   }
 })();
 </script>
@@ -15934,9 +16060,11 @@ async function migrarArtesParaStorage(){
   }
 }
 async function salvarCaixas(){
+  if(disjuntorBloqueiaSave('caixas','caixas',CAIXAS)) return; // v2.26.3 — nunca salva vazio / se a leitura falhou
   await migrarArtesParaStorage(); // v2.8.0 — arte base64 → Storage (mantém só URL no documento)
   localStorage.setItem(PK_CAIXAS, JSON.stringify(CAIXAS));
   if(typeof db !== 'undefined' && db){
+    if(await nuvemEncolheuDemais('caixas','caixas',CAIXAS)) return; // v2.26.3 — encolheu >30% (confirma) / sem verificação (cancela)
     try {
       await db.collection('jp_sistema').doc('caixas').set({
         caixas: CAIXAS,
@@ -15954,7 +16082,12 @@ async function sincronizarCaixasFirebase(){
       localStorage.setItem(PK_CAIXAS, JSON.stringify(CAIXAS));
       if(STATE.view === 'cad-caixas') renderCaixas();
     }
-  } catch(e){}
+    window.LOAD_STATUS.caixas = 'ok'; // v2.26.3 — leitura ok → libera salvar
+  } catch(e){
+    window.LOAD_STATUS.caixas = 'falhou'; // v2.26.3 — não engole o erro: bloqueia salvar por cima
+    console.error('Erro ao ler caixas do servidor:', e.message);
+    if(typeof toast==='function') toast('⚠ Não consegui ler as caixas do servidor — salvar bloqueado até recarregar.','err');
+  }
 }
 carregarCaixas();
 // v1.9.6 — inicializar módulo de orçamento
@@ -15967,7 +16100,7 @@ if(typeof initEscalasModule === 'function') initEscalasModule();
 if(typeof initOcorrenciasModule === 'function') initOcorrenciasModule();
 if(typeof initManutencoesModule === 'function') initManutencoesModule();
 if(typeof initEntregasVivo === 'function') initEntregasVivo();
-setTimeout(()=>{
+aposLoginPCP(()=>{   // v2.26.3 — só lê depois do login confirmado
   sincronizarCaixasFirebase();
   if(typeof db !== 'undefined' && db){
     db.collection('jp_sistema').doc('caixas').onSnapshot(doc=>{
@@ -15976,9 +16109,14 @@ setTimeout(()=>{
         localStorage.setItem(PK_CAIXAS, JSON.stringify(CAIXAS));
         if(STATE.view === 'cad-caixas') renderCaixas();
       }
+      window.LOAD_STATUS.caixas = 'ok';
+    }, err=>{   // v2.26.3 — listener não morre calado: marca falha e bloqueia salvar
+      window.LOAD_STATUS.caixas = 'falhou';
+      console.error('Listener caixas falhou:', err.message);
+      if(typeof toast==='function') toast('⚠ Conexão das caixas caiu — salvar bloqueado até recarregar.','err');
     });
   }
-}, 2000);
+});
 
 // ==========================================================
 // CADASTRO DE CLIENTES (v1.9.6)
@@ -15991,8 +16129,10 @@ function carregarClientes(){
   catch(e){ CLIENTES = []; }
 }
 async function salvarClientes(){
+  if(disjuntorBloqueiaSave('clientes','clientes',CLIENTES)) return; // v2.26.3 — nunca salva vazio / se a leitura falhou
   localStorage.setItem(PK_CLIENTES, JSON.stringify(CLIENTES));
   if(typeof db !== 'undefined' && db){
+    if(await nuvemEncolheuDemais('clientes','clientes',CLIENTES)) return; // v2.26.3 — encolheu >30% (confirma) / sem verificação (cancela)
     try {
       await db.collection('jp_sistema').doc('clientes').set({
         clientes: CLIENTES,
@@ -16010,10 +16150,15 @@ async function sincronizarClientesFirebase(){
       localStorage.setItem(PK_CLIENTES, JSON.stringify(CLIENTES));
       if(STATE.view === 'cad-clientes') renderClientes();
     }
-  } catch(e){}
+    window.LOAD_STATUS.clientes = 'ok'; // v2.26.3
+  } catch(e){
+    window.LOAD_STATUS.clientes = 'falhou'; // v2.26.3 — não engole o erro
+    console.error('Erro ao ler clientes do servidor:', e.message);
+    if(typeof toast==='function') toast('⚠ Não consegui ler os clientes do servidor — salvar bloqueado até recarregar.','err');
+  }
 }
 carregarClientes();
-setTimeout(()=>{
+aposLoginPCP(()=>{   // v2.26.3 — só lê depois do login confirmado
   sincronizarClientesFirebase();
   if(typeof db !== 'undefined' && db){
     db.collection('jp_sistema').doc('clientes').onSnapshot(doc=>{
@@ -16022,11 +16167,16 @@ setTimeout(()=>{
         localStorage.setItem(PK_CLIENTES, JSON.stringify(CLIENTES));
         if(STATE.view === 'cad-clientes') renderClientes();
       }
+      window.LOAD_STATUS.clientes = 'ok';
+    }, err=>{   // v2.26.3 — não morre calado
+      window.LOAD_STATUS.clientes = 'falhou';
+      console.error('Listener clientes falhou:', err.message);
+      if(typeof toast==='function') toast('⚠ Conexão dos clientes caiu — salvar bloqueado até recarregar.','err');
     });
   }
-  // Migração: criar cadastros incompletos pra clientes que existem em pedidos/caixas
-  setTimeout(migrarClientesAutomatico, 3000);
-}, 2500);
+  // v2.26.3 — DESLIGADO o salvamento automático (migrarClientesAutomatico) que recriava clientes em branco.
+  // Agora a migração só roda manualmente e com proteções (ver a função). NÃO dispara sozinha.
+});
 
 function gerarIdCli(){ return 'cli_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
 
@@ -16054,6 +16204,18 @@ function contarVinculosCliente(nome){
 
 // v1.9.6 — Migração automática: criar registros incompletos pra clientes que aparecem em pedidos/caixas
 function migrarClientesAutomatico(){
+  // v2.26.3 — SEGURANÇA: só roda se a leitura de clientes confirmou (não pode rodar com lista não carregada).
+  if(!window.LOAD_STATUS || window.LOAD_STATUS.clientes !== 'ok'){
+    console.warn('[migração clientes] abortada: leitura de clientes ainda não está OK.');
+    if(typeof toast==='function') toast('Migração não rodou: clientes ainda não carregaram.','err');
+    return;
+  }
+  // Se a lista está vazia mas há pedidos/caixas, é sinal de carga falha → NUNCA recriar tudo do zero.
+  if((!Array.isArray(CLIENTES) || CLIENTES.length === 0) && (((STATE.pedidos||[]).length) || ((CAIXAS||[]).length))){
+    console.warn('[migração clientes] abortada: clientes vazio mas há pedidos/caixas (provável falha de carga).');
+    return;
+  }
+  // (esta função só ADICIONA nomes que ainda não existem — nunca apaga nem sobrescreve campos de quem já existe)
   const nomesExistentes = new Set(CLIENTES.map(c => (c.nome||'').trim().toLowerCase()));
   const novosClientes = new Set();
   // Coletar nomes únicos de pedidos e caixas
@@ -18315,20 +18477,22 @@ function carregarVendedores(){
   catch(e){ VENDEDORES = []; }
 }
 async function salvarVendedores(){
+  if(disjuntorBloqueiaSave('vendedores','vendedores',VENDEDORES)) return; // v2.26.3 — nunca salva vazio / se a leitura falhou
   localStorage.setItem(PK_VENDEDORES, JSON.stringify(VENDEDORES));
   if(typeof db !== 'undefined' && db){
+    if(await nuvemEncolheuDemais('vendedores','vendedores',VENDEDORES)) return; // v2.26.3 — encolheu >30% (confirma) / sem verificação (cancela)
     try {
       await db.collection('jp_sistema').doc('vendedores').set({
         vendedores: VENDEDORES,
         atualizadoEm: firebase.firestore.FieldValue.serverTimestamp()
       });
-    } catch(e){}
+    } catch(e){ console.warn('Erro salvar vendedores:', e.message); }
   }
 }
 function gerarIdVend(){ return 'vend_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
 
 carregarVendedores();
-setTimeout(()=>{
+aposLoginPCP(()=>{   // v2.26.3 — só lê depois do login confirmado
   if(typeof db !== 'undefined' && db){
     db.collection('jp_sistema').doc('vendedores').get().then(doc=>{
       if(doc.exists && doc.data().vendedores){
@@ -18337,7 +18501,12 @@ setTimeout(()=>{
         popularDropdownVendedores();
         if(STATE.view === 'cad-vendedores') renderVendedores();
       }
-    }).catch(()=>{});
+      window.LOAD_STATUS.vendedores = 'ok';
+    }).catch(e=>{
+      window.LOAD_STATUS.vendedores = 'falhou'; // v2.26.3 — não engole o erro
+      console.error('Erro ao ler vendedores do servidor:', e.message);
+      if(typeof toast==='function') toast('⚠ Não consegui ler os vendedores — salvar bloqueado até recarregar.','err');
+    });
     db.collection('jp_sistema').doc('vendedores').onSnapshot(doc=>{
       if(doc.exists && doc.data().vendedores){
         VENDEDORES = doc.data().vendedores;
@@ -18345,9 +18514,14 @@ setTimeout(()=>{
         popularDropdownVendedores();
         if(STATE.view === 'cad-vendedores') renderVendedores();
       }
+      window.LOAD_STATUS.vendedores = 'ok';
+    }, err=>{   // v2.26.3 — não morre calado
+      window.LOAD_STATUS.vendedores = 'falhou';
+      console.error('Listener vendedores falhou:', err.message);
+      if(typeof toast==='function') toast('⚠ Conexão dos vendedores caiu — salvar bloqueado até recarregar.','err');
     });
   }
-}, 2300);
+});
 
 function limparFormVendedor(){
   ['vend-id','vend-nome','vend-whatsapp','vend-email','vend-pin'].forEach(id => {
@@ -19877,6 +20051,96 @@ setTimeout(()=>{
 })();
 </script>
 <script>
+// ============================================================
+// v2.26.4 — BACKUP AUTOMÁTICO (cofre no Firebase + cópia no PC) a cada 30 min
+// ============================================================
+(function(){
+  const INTERVALO = 30*60*1000;  // 30 min
+  const MANTER = 48;             // últimas 48 fotos (~24h)
+
+  // não faz backup de estado danificado/não carregado (mesma filosofia do disjuntor)
+  function dadosSaudaveis(){
+    try{
+      const ls = window.LOAD_STATUS||{};
+      if(ls.caixas==='falhou'||ls.clientes==='falhou'||ls.vendedores==='falhou') return false;
+      const n = k=>{try{return JSON.parse(localStorage.getItem(k)||'[]').length}catch(e){return 0}};
+      const ped=(window.STATE&&STATE.pedidos)?STATE.pedidos.length:0;
+      if(n('jp_caixas_v1')===0 && n('jp_clientes_v1')===0 && ped===0) return false; // tudo vazio = carga incompleta
+      return true;
+    }catch(e){ return false; }
+  }
+
+  async function fazerBackupCofre(payload){
+    if(typeof db==='undefined' || !db) return;
+    try{
+      await db.collection('jp_backups').add({
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+        geradoEm: payload.geradoEm,
+        qtdPedidos: payload.qtdPedidos, qtdCaixas: payload.qtdCaixas, qtdClientes: payload.qtdClientes,
+        payload: JSON.stringify(payload)
+      });
+      const snap = await db.collection('jp_backups').orderBy('criadoEm','desc').get();
+      if(snap.size > MANTER){ for(const d of snap.docs.slice(MANTER)){ try{ await d.ref.delete(); }catch(e){} } }
+    }catch(e){ console.warn('backup cofre:', e.message); }
+  }
+
+  async function backupAutomatico(){
+    if(typeof gerarPayloadBackup!=='function') return;
+    if(!dadosSaudaveis()){ console.warn('[backup auto] pulado: dados não saudáveis/carregando.'); return; }
+    const payload = gerarPayloadBackup();
+    await fazerBackupCofre(payload);          // 1) cofre na nuvem
+    try{ if(typeof downloadBackup==='function') downloadBackup(true); }catch(e){}  // 2) cópia no PC
+    console.log('[backup auto] feito', new Date().toLocaleTimeString());
+  }
+  window.backupAutomatico = backupAutomatico;
+
+  function ligar(){
+    setInterval(backupAutomatico, INTERVALO);
+    setTimeout(backupAutomatico, 90000); // primeiro ~1,5 min após abrir (dá tempo de carregar tudo)
+    const b=document.getElementById('btn-cofre-listar'); if(b) b.onclick=listarBackupsCofre;
+  }
+  if(typeof aposLoginPCP==='function') aposLoginPCP(ligar); else setTimeout(ligar, 6000);
+
+  // ---- ver/restaurar do cofre ----
+  async function listarBackupsCofre(){
+    const el=document.getElementById('cofre-lista'); if(el) el.innerHTML='Carregando…';
+    if(typeof db==='undefined' || !db){ if(el) el.textContent='Sem conexão.'; return; }
+    try{
+      const snap=await db.collection('jp_backups').orderBy('criadoEm','desc').limit(20).get();
+      if(snap.empty){ if(el) el.textContent='Nenhum backup na nuvem ainda (o primeiro sai ~1,5 min após abrir).'; return; }
+      let html='';
+      snap.forEach(d=>{ const x=d.data();
+        const q=`${x.qtdCaixas||0} cx · ${x.qtdClientes||0} cli · ${x.qtdPedidos||0} ped`;
+        const qd=x.geradoEm?new Date(x.geradoEm).toLocaleString('pt-BR'):'—';
+        html+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-bottom:1px solid var(--line-soft);padding:6px 0"><span>${qd} <span style="color:var(--text-4)">(${q})</span></span><button class="btn btn-success btn-sm" data-cofre="${d.id}">Restaurar</button></div>`; });
+      if(el){ el.innerHTML=html; el.querySelectorAll('[data-cofre]').forEach(btn=>btn.onclick=()=>restaurarDoCofre(btn.dataset.cofre)); }
+    }catch(e){ if(el) el.textContent='Erro: '+e.message; }
+  }
+  window.listarBackupsCofre = listarBackupsCofre;
+
+  async function restaurarDoCofre(id){
+    if(!confirm('⚠️ Restaurar este backup vai SUBSTITUIR os dados atuais (caixas, clientes, vendedores, pedidos). Continuar?')) return;
+    try{
+      const doc=await db.collection('jp_backups').doc(id).get();
+      if(!doc.exists){ toast('Backup não encontrado','err'); return; }
+      const data=JSON.parse(doc.data().payload);
+      if(Array.isArray(data.pedidos)){ STATE.pedidos=data.pedidos.map(migrarPedido); localStorage.setItem(PK_PEDIDOS, JSON.stringify(STATE.pedidos)); }
+      if(data.config){ STATE.config={...STATE.config, ...data.config}; saveStorage(PK_CONFIG, STATE.config); }
+      let cad=0;
+      if(data.storage && typeof data.storage==='object'){
+        Object.entries(data.storage).forEach(([k,v])=>{ if(typeof v==='string' && k!=='jp_pcp_ok'){ try{ localStorage.setItem(k,v); cad++; }catch(e){} } });
+        ['carregarCaixas','carregarClientes','carregarVendedores','carregarChapas','carregarPapeis','carregarCores','carregarMotoristas','carregarCaminhoes'].forEach(fn=>{ if(typeof window[fn]==='function'){ try{ window[fn](); }catch(e){} } });
+        ['salvarCaixas','salvarClientes','salvarVendedores'].forEach(fn=>{ if(typeof window[fn]==='function'){ try{ window[fn](); }catch(e){} } });
+      }
+      if(typeof renderAll==='function') renderAll();
+      toast(`✓ Restaurado da nuvem: ${STATE.pedidos.length} pedidos`+(cad?` + ${cad} cadastros`:''));
+    }catch(e){ toast('Erro ao restaurar: '+e.message,'err'); }
+  }
+  window.restaurarDoCofre = restaurarDoCofre;
+})();
+</script>
+
+<script>
 // v2.26.2 — CORREÇÃO do menu "misturado" no load: aplica o filtro do MÓDULO ATIVO como ÚLTIMA etapa,
 // depois de todos os wrappers de permissão (senão Cadastros/Expedição reaparecem misturados até clicar).
 (function(){
@@ -19905,7 +20169,7 @@ setTimeout(()=>{
 <script>
 // v2.26.0 — Detector de versão nova (resolve o cache agressivo do PWA no iOS). Extra independente; não afeta o offline.
 (function(){
-  var JP_VERSAO_APP='2.26.2';
+  var JP_VERSAO_APP='2.27.0';
   function num(v){ return (String(v||'').match(/\d+/g)||[]).map(Number); }
   function maior(a,b){ var x=num(a),y=num(b),n=Math.max(x.length,y.length); for(var i=0;i<n;i++){ var d=(x[i]||0)-(y[i]||0); if(d) return d>0; } return false; }
   function atualizar(){
