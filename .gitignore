@@ -1,0 +1,10 @@
+# Lixo do macOS
+.DS_Store
+
+# Config local do Claude Code
+.claude/
+
+# Backups locais dos arquivos (cópias de segurança antes de editar)
+*.bak
+*.bak-*
+*.backup
