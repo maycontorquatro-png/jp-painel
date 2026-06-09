@@ -642,7 +642,7 @@ body {
   <div class="app-header">
     <div class="app-titulo">
       🚛 JP ESCALA
-      <span class="badge">v2.27.2</span>
+      <span class="badge">v2.27.3</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span class="user-info" id="user-info"></span>
@@ -1653,5 +1653,7 @@ document.querySelectorAll('.modal').forEach(m => {
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>
+<script>/* v2.27.3 — service worker (network-first: código sempre fresco + offline) */
+if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}}</script>
 </body>
 </html>

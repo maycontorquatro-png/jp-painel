@@ -366,7 +366,7 @@ body {
   </div>
 
   <div class="footer">
-    <span class="versao">v2.27.2</span> ·
+    <span class="versao">v2.27.3</span> ·
     <span class="status"><span class="dot"></span>Servidor online</span>
   </div>
 </div>
@@ -509,5 +509,7 @@ function cancelarRedirect() {
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', injetar); else injetar();
 })();
 </script>
+<script>/* v2.27.3 — service worker (network-first: código sempre fresco + offline) */
+if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}}</script>
 </body>
 </html>
