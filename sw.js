@@ -9,7 +9,7 @@
  * Botão de pânico: "🧹 Atualizar app" no painel do operador desregistra o SW e
  * limpa tudo. Bump no CACHE abaixo força a troca do SW em todos os aparelhos.
  */
-const CACHE = 'jp-v2.28.1';
+const CACHE = 'jp-v2.28.2';
 
 self.addEventListener('install', (e) => {
   // assume o controle imediatamente, sem esperar fechar as abas antigas
